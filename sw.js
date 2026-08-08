@@ -2,14 +2,32 @@
    SW.JS — HAMRO AFNAI  Service Worker
    Strategy:
    • Admin panel      → NEVER intercepted. Always live network.
-   • index.html/shell → network-first, fallback to cache.
-   • API/getFile      → network-first, cache successful responses.
-   • Stale clearance  → on activate, delete all old caches.
+   • index.html/shell → network-first, cache-bypass (no-store) so a
+                         live connection is never shadowed by a stale
+                         copy. Falls back to the last cached copy ONLY
+                         when the network genuinely fails — that cached
+                         index.html still boots normally and its own
+                         resumeUserSession() logic decides whether a
+                         permanent/trial user can proceed straight in,
+                         or whether to show the login screen.
+   • API/getFile      → network-first. Plain API calls (login, checkSession,
+                         etc.) get a generic offline JSON fallback and are
+                         never cached — most of them aren't safe to serve
+                         stale. `action=getFile` responses (the actual
+                         question-set JSON) ARE cached in Cache Storage as
+                         a second offline layer alongside app.js's own
+                         localStorage cache — Cache Storage's quota is far
+                         higher than localStorage's ~5-10MB.
+   • Stale clearance  → whenever we're confirmed online again, purge
+                         any cached entries that aren't part of the
+                         current SHELL, so a reconnect never leaves old
+                         orphaned responses sitting in Cache Storage.
    ═══════════════════════════════════════════════════════════════ */
 
-// 👇 Change this name whenever you update shell files to force all devices
-//    to fetch fresh copies and discard the previous cache.
-const CACHE_NAME = 'ha-shell-v1';   // fresh start – all previous caches will be wiped
+/* 👇 Bump this name whenever you update any shell file (index.html,
+   user.html, app.js, chapters-data.js, manifest.json). All previous
+   caches will be deleted immediately on activation. */
+const CACHE_NAME = 'ha-shell-v1';   // fresh start – old caches wiped
 
 const SHELL = [
   './',
@@ -18,11 +36,11 @@ const SHELL = [
   './app.js',
   './chapters-data.js',
   './manifest.json'
-  // NOTE: admin.html is deliberately NOT in SHELL – it must never be
-  // served from cache, so there's no reason to precache it either.
+  // NOTE: admin.html is deliberately NOT in SHELL — it must never be
+  // served from cache.
 ];
 
-/* Is this request from the admin panel? */
+/* Is this request/page the admin panel? */
 async function isAdminOrigin(request, clientId) {
   const url = new URL(request.url);
   if (url.pathname.endsWith('admin.html')) return true;
@@ -30,9 +48,7 @@ async function isAdminOrigin(request, clientId) {
   try {
     const client = await self.clients.get(clientId);
     return !!(client && client.url && client.url.includes('admin.html'));
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 }
 
 /* ----- INSTALL: precache the shell and skip waiting (activate immediately) ----- */
@@ -40,29 +56,29 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
       .then(c => c.addAll(SHELL))
-      .catch(err => console.warn('SW install: some files not cached', err))
+      .catch(err => console.warn('SW install: some shell files could not be cached', err))
   );
-  self.skipWaiting();  // 👈 forces the new SW to activate right away
+  self.skipWaiting();  // ← immediate activation, no old SW left behind
 });
 
-/* ----- ACTIVATE: delete all old caches and claim all pages ----- */
+/* ----- ACTIVATE: delete all old caches and claim all clients ----- */
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();  // 👈 takes control of all open pages immediately
+  self.clients.claim();  // ← take control of every open tab/pwa instantly
 });
 
-/* Remove cached entries not in the current SHELL (e.g., old admin.html leftovers). */
+/* Remove any cached shell entries that aren't in the current SHELL list */
 async function clearStaleShellEntries() {
   const cache = await caches.open(CACHE_NAME);
   const keys = await cache.keys();
   const shellAbs = new Set(SHELL.map(p => new URL(p, self.registration.scope).href));
   await Promise.all(keys.map(req => {
     const url = new URL(req.url);
-    const isApi = url.hostname.includes('script.google.com'); // leave API entries alone
+    const isApi = url.hostname.includes('script.google.com'); // keep getFile responses
     if (isApi) return Promise.resolve();
     if (!shellAbs.has(req.url)) {
       return cache.delete(req);
@@ -71,24 +87,22 @@ async function clearStaleShellEntries() {
   }));
 }
 
-/* Listen for clear‑stale message from app.js (optional) */
+/* Listen for clear‑stale message from index.html / app.js (optional) */
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'CLEAR_STALE_IF_ONLINE') {
     e.waitUntil ? e.waitUntil(clearStaleShellEntries()) : clearStaleShellEntries();
   }
 });
 
-/* ----- FETCH: network-first for everything except admin ----- */
+/* ----- FETCH: network-first with cache fallback, admin bypassed ----- */
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   e.respondWith((async () => {
     const fromAdmin = await isAdminOrigin(e.request, e.clientId);
 
-    /* ── ADMIN: bypass SW entirely ── */
-    if (fromAdmin) {
-      return fetch(e.request);
-    }
+    /* ── ADMIN: bypass the service worker entirely ── */
+    if (fromAdmin) return fetch(e.request);
 
     /* ── API calls: network-first ── */
     if (url.hostname.includes('script.google.com')) {
@@ -106,7 +120,7 @@ self.addEventListener('fetch', e => {
           const cached = await caches.match(e.request);
           if (cached) return cached;
         }
-        // Do not return a fabricated offline response—let the page handle the error.
+        // Don’t fabricate a fake response — let the page handle the error.
         throw err;
       }
     }
