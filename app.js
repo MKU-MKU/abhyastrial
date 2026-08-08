@@ -915,40 +915,501 @@ const QUIZ = {
     }
   },
 
-  _showError(msg, retryFn){ /* ... (keep existing implementation) */ },
-  _showLoader(msg){ /* ... (keep existing implementation) */ },
-  _hideLoader(){ /* ... (keep existing implementation) */ },
-
-  startWith(qsArr, mode, chapterName, scope=null){
-    // ... (same as original, calls _showLimitPicker or _doStart)
+  _showError(msg, retryFn){
+    let el = document.getElementById('quiz-error-card');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'quiz-error-card';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1.5rem';
+      document.body.appendChild(el);
+    }
+    el._retry = retryFn || null;
+    el.innerHTML = `<div style="background:var(--c2);border:1px solid var(--bad-bd);border-radius:var(--r3);padding:1.4rem 1.5rem;max-width:380px;width:100%;box-shadow:var(--sh3)">
+      <div style="font-size:1.4rem;margin-bottom:.5rem">❌</div>
+      <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--ros);margin-bottom:.6rem">Failed to Load</div>
+      <div style="font-size:.78rem;color:var(--t2);line-height:1.6;margin-bottom:1rem">${esc(msg)}</div>
+      <div style="display:flex;gap:.5rem">
+        <button id="quiz-err-retry" style="flex:1;padding:.58rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r1);color:#0F0A00;font-weight:700;font-size:.82rem;cursor:pointer;font-family:var(--ff)">🔄 Retry</button>
+        <button onclick="document.getElementById('quiz-error-card').remove()" style="padding:.58rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.82rem;cursor:pointer;font-family:var(--ff)">✕ Close</button>
+      </div>
+    </div>`;
+    el.style.display = 'flex';
+    document.getElementById('quiz-err-retry').onclick = ()=>{ el.remove(); if(el._retry) el._retry(); };
   },
 
-  _showLimitPicker(qsArr, mode, chapterName, scope=null){ /* ... */ },
-  _doStart(qsArr, mode, chapterName, doShuffle=true, scope=null){ /* ... */ },
+  _showLoader(msg){
+    let el = document.getElementById('quiz-loader');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'quiz-loader';
+      el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:1rem;backdrop-filter:blur(4px)';
+      el.innerHTML = '<div style="width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--neon,#00e5ff);border-radius:50%;animation:spin 0.8s linear infinite"></div><div id="quiz-loader-msg" style="color:#fff;font-size:.9rem;font-weight:600;text-align:center;padding:0 1.5rem"></div>';
+      document.body.appendChild(el);
+      if(!document.getElementById('quiz-loader-style')){
+        const st = document.createElement('style');
+        st.id = 'quiz-loader-style';
+        st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+        document.head.appendChild(st);
+      }
+    }
+    document.getElementById('quiz-loader-msg').textContent = msg || 'Loading…';
+    el.style.display = 'flex';
+  },
+  _hideLoader(){
+    const el = document.getElementById('quiz-loader');
+    if(el) el.style.display = 'none';
+  },
 
-  daily(){ /* ... */ },
-  adaptive(){ /* ... */ },
+  startWith(qsArr, mode, chapterName, scope=null){
+    if(!qsArr || !qsArr.length){ toast('No questions to study'); return; }
+    QUIZ._stopTimer();
+    if(qsArr.length > 20){
+      QUIZ._showLimitPicker(qsArr, mode, chapterName, scope);
+      return;
+    }
+    QUIZ._doStart(qsArr, mode, chapterName, true, scope);
+  },
 
-  _startTimer(){ /* ... */ },
-  _stopTimer(){ /* ... */ },
+  _showLimitPicker(qsArr, mode, chapterName, scope=null){
+    if(document.getElementById('quiz-limit-modal')) return;
+    const total = qsArr.length;
+    const presets = [10,20,30,50].filter(n=>n<total);
+    const modal = document.createElement('div');
+    modal.id = 'quiz-limit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1.5rem;backdrop-filter:blur(4px)';
+    modal.innerHTML = `
+      <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
+        <div style="font-size:1.2rem;margin-bottom:.35rem">${mode==='exam'?'📝':'⚡'}</div>
+        <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--t1);margin-bottom:.2rem">${esc(chapterName||'Quiz')}</div>
+        <div style="font-size:.74rem;color:var(--t3);margin-bottom:1rem">${total} questions available — how many do you want to do?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">
+          ${presets.map(n=>`<button onclick="document.getElementById('qlm-inp').value=${n}" style="padding:.35rem .7rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.76rem;cursor:pointer;font-family:var(--ff)">${n}</button>`).join('')}
+          <button onclick="document.getElementById('qlm-inp').value=${total}" style="padding:.35rem .7rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.76rem;cursor:pointer;font-family:var(--ff)">All ${total}</button>
+        </div>
+        <input id="qlm-inp" type="number" min="1" max="${total}" value="${Math.min(20,total)}"
+          style="width:100%;background:var(--c1);border:1.5px solid var(--b1);border-radius:var(--r2);padding:.5rem .75rem;color:var(--t1);font-size:.9rem;font-family:var(--ff);outline:none;box-sizing:border-box;margin-bottom:.6rem">
+        <label style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;cursor:pointer;font-size:.8rem;color:var(--t2)">
+          <input id="qlm-shuffle" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--amb);cursor:pointer">
+          🔀 Shuffle question order
+        </label>
+        <div style="display:flex;gap:.4rem">
+          <button id="qlm-start" style="flex:1;padding:.62rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r2);color:#0F0A00;font-weight:700;font-size:.85rem;cursor:pointer;font-family:var(--ff)">Start →</button>
+          <button onclick="document.getElementById('quiz-limit-modal').remove()" style="padding:.62rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-size:.83rem;cursor:pointer;font-family:var(--ff)">✕</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+    document.getElementById('qlm-start').onclick = ()=>{
+      const n = Math.min(total, Math.max(1, parseInt(document.getElementById('qlm-inp').value)||total));
+      const doShuffle = document.getElementById('qlm-shuffle').checked;
+      modal.remove();
+      const picked = doShuffle ? shuf(qsArr).slice(0,n) : qsArr.slice(0,n);
+      QUIZ._doStart(picked, mode, chapterName, false, scope);
+    };
+  },
 
-  // Exam snapshot, checkResumableExam, etc. (unchanged)
+  _doStart(qsArr, mode, chapterName, doShuffle=true, scope=null){
+    const modeLabel = mode==='exam' ? '📝 Exam' : '⚡ Flashcard';
+    toast(`${modeLabel} — ${qsArr.length} question${qsArr.length!==1?'s':''} · ${chapterName||'Study'}`, 2500);
+    S.quiz = {
+      qs: doShuffle ? shuf(qsArr) : [...qsArr], ans: new Array(qsArr.length).fill(null),
+      mode, idx:0, timer:null, elapsed:0,
+      left: mode==='exam' ? qsArr.length*90 : 0,
+      active:true, ch: chapterName||'Study', scope, skipped:new Set(), shown:new Set()
+    };
+    document.getElementById('quiz-wrap').style.display='';
+    document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+    window.scrollTo(0,0);
+    try{
+      if(mode==='exam'){
+        document.getElementById('fc-wrap').style.display='none';
+        document.getElementById('ex-wrap').style.display='';
+        document.getElementById('res-wrap').style.display='none';
+        QUIZ._renderExam();
+      } else {
+        document.getElementById('ex-wrap').style.display='none';
+        document.getElementById('fc-wrap').style.display='';
+        document.getElementById('res-wrap').style.display='none';
+        QUIZ._renderFlashcard();
+      }
+    } catch(err){
+      console.error('[QUIZ._doStart] render failed:', err);
+      S.quiz.active = false;
+      document.getElementById('quiz-wrap').style.display = 'none';
+      toast('❌ Could not display this quiz — one of the questions may be malformed. Try a different set.', 5000);
+      return;
+    }
+    QUIZ._startTimer();
+    if(mode==='exam') QUIZ._snapshotExam();
+  },
 
-  _renderFlashcard(){ /* ... */ },
-  _updateFcCounts(){ /* ... */ },
-  fcAnswer(i){ /* ... */ },
-  fcNav(dir){ /* ... */ },
-  _star(){ /* ... */ },
-  _flag(){ /* ... */ },
-  _tagCurrent(tag){ /* ... */ },
-  fcFinish(){ /* ... */ },
+  daily(){
+    const refs = ChapterData.allFileRefs();
+    if(!refs.length){ toast('No content configured yet'); return; }
+    toast('⏳ Building today\'s challenge…');
+    (async()=>{
+      const picks = shuf(refs).slice(0, Math.min(10, refs.length));
+      const all = [];
+      let failed = 0;
+      for(const ref of picks){
+        try{
+          const raw = await QUIZ._fetch(ref.fid, ref.key);
+          const qs2 = normQ(raw, ref.fid);
+          all.push(...qs2);
+        }catch(e){
+          failed++;
+          console.warn('[daily] Failed to load', ref.key, e.message);
+        }
+      }
+      if(!all.length){ toast('❌ Could not load daily challenge — try caching data first'); return; }
+      if(failed>0) toast(`⚠️ ${failed} file(s) failed — challenge uses ${all.length} questions`);
+      const qsArr = shuf(all).slice(0,30);
+      QUIZ.startWith(qsArr, 'flashcard', '🌟 Daily Challenge');
+      STREAK.markToday();
+    })();
+  },
 
-  _renderExam(){ /* ... */ },
-  exAnswer(qi, oi){ /* ... */ },
-  submitExam(){ /* ... */ },
+  async adaptive(){
+    const TARGET = 25;
+    const seen = new Set();
+    const pool = [];
+    const addAll = list => { for(const q of list){ if(q && q.uid && !seen.has(q.uid)){ seen.add(q.uid); pool.push(q); } } };
 
-  retryWrong(){ /* ... */ },
+    addAll(REV.dueWrong());
+    addAll(S.bk.filter(q => q.tag==='Confusing' || q.tag==='Need Check'));
 
+    if(pool.length >= TARGET){
+      QUIZ.startWith(shuf(pool).slice(0,TARGET), 'flashcard', '🎯 Adaptive Practice');
+      return;
+    }
+
+    const refs = ChapterData.allFileRefs();
+    if(!refs.length){
+      if(pool.length){ QUIZ.startWith(shuf(pool), 'flashcard', '🎯 Adaptive Practice'); return; }
+      toast('No content configured yet'); return;
+    }
+    toast('⏳ Building your adaptive practice set…');
+    const need = TARGET - pool.length;
+    const picks = shuf(refs).slice(0, Math.min(8, refs.length));
+    let failed = 0;
+    for(const ref of picks){
+      if(pool.length - (TARGET-need) >= need*2) break;
+      try{
+        const raw = await QUIZ._fetch(ref.fid, ref.key);
+        addAll(normQ(raw, ref.fid));
+      }catch(e){
+        failed++;
+        console.warn('[adaptive] Failed to load', ref.key, e.message);
+      }
+    }
+    if(!pool.length){ toast('❌ Could not build a practice set — try caching data first'); return; }
+    if(failed>0) toast(`⚠️ ${failed} file(s) failed — practice set uses what loaded`);
+    QUIZ.startWith(shuf(pool).slice(0,TARGET), 'flashcard', '🎯 Adaptive Practice');
+  },
+
+  _startTimer(){
+    QUIZ._stopTimer();
+    S.quiz.timer = setInterval(()=>{
+      if(!S.quiz.active)return;
+      if(S.quiz.mode==='exam'){
+        S.quiz.left--;
+        const tEl=document.getElementById('ex-tmr'); if(tEl) tEl.textContent=fmt(S.quiz.left);
+        if(S.quiz.left<=0){ toast('⏰ Time\'s up!'); QUIZ.submitExam(); return; }
+        if(S.quiz.left % 15 === 0) QUIZ._snapshotExam();
+      } else {
+        S.quiz.elapsed++;
+        const tEl=document.getElementById('fc-tmr'); if(tEl) tEl.textContent=fmt(S.quiz.elapsed);
+      }
+    },1000);
+  },
+  _stopTimer(){ if(S.quiz.timer){ clearInterval(S.quiz.timer); S.quiz.timer=null; } },
+
+  _snapshotExam(){
+    if(!S.quiz || !S.quiz.active || S.quiz.mode!=='exam' || !S.user) return;
+    _save(LS.EXAM_SNAP, {
+      username: S.user.username,
+      ch: S.quiz.ch,
+      qs: S.quiz.qs,
+      ans: S.quiz.ans,
+      left: S.quiz.left,
+      savedAt: Date.now()
+    });
+  },
+  _clearExamSnapshot(){ localStorage.removeItem(LS.EXAM_SNAP); },
+
+  checkResumableExam(){
+    const snap = _load(LS.EXAM_SNAP, null);
+    if(!snap || !S.user || snap.username !== S.user.username || !snap.qs || !snap.qs.length){
+      if(snap) QUIZ._clearExamSnapshot();
+      return;
+    }
+    const elapsedSinceSave = Math.floor((Date.now() - snap.savedAt) / 1000);
+    const adjustedLeft = snap.left - elapsedSinceSave;
+
+    if(adjustedLeft <= 0){
+      QUIZ._resumeSnapshot(snap, 0);
+      toast('⏰ Your exam timer ran out while you were away — showing your results.');
+      QUIZ.submitExam();
+      return;
+    }
+
+    const answered = snap.ans.filter(a=>a!==null).length;
+    const modal = document.createElement('div');
+    modal.id = 'exam-resume-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1.5rem;backdrop-filter:blur(4px)';
+    modal.innerHTML = `
+      <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
+        <div style="font-size:1.2rem;margin-bottom:.35rem">📝</div>
+        <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--t1);margin-bottom:.2rem">Unfinished exam found</div>
+        <div style="font-size:.78rem;color:var(--t3);margin-bottom:1rem">${esc(snap.ch)} — ${answered}/${snap.qs.length} answered, ${fmt(adjustedLeft)} left on the clock. This was probably interrupted by a reload or a closed tab.</div>
+        <div style="display:flex;gap:.4rem">
+          <button id="exam-resume-btn" style="flex:1;padding:.62rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r2);color:#0F0A00;font-weight:700;font-size:.85rem;cursor:pointer;font-family:var(--ff)">▶️ Resume</button>
+          <button id="exam-discard-btn" style="padding:.62rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-size:.83rem;cursor:pointer;font-family:var(--ff)">Discard</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('exam-resume-btn').onclick = ()=>{
+      modal.remove();
+      QUIZ._resumeSnapshot(snap, adjustedLeft);
+    };
+    document.getElementById('exam-discard-btn').onclick = ()=>{
+      modal.remove();
+      QUIZ._clearExamSnapshot();
+    };
+  },
+  _resumeSnapshot(snap, adjustedLeft){
+    S.quiz = {
+      qs: snap.qs, ans: snap.ans, mode:'exam', idx:0, timer:null, elapsed:0,
+      left: adjustedLeft, active:true, ch: snap.ch, skipped:new Set(), shown:new Set()
+    };
+    document.getElementById('quiz-wrap').style.display='';
+    document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+    document.getElementById('fc-wrap').style.display='none';
+    document.getElementById('ex-wrap').style.display='';
+    document.getElementById('res-wrap').style.display='none';
+    QUIZ._renderExam();
+    QUIZ._startTimer();
+    toast('▶️ Exam resumed');
+  },
+
+  quit(){
+    QUIZ._exitGuard(()=>{ UI._goRaw('home'); });
+  },
+
+  _exitGuard(afterQuit){
+    if(document.getElementById('quiz-exit-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'quiz-exit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1.5rem;backdrop-filter:blur(4px)';
+    const isExam = S.quiz.mode === 'exam';
+    const answered = S.quiz.ans.filter(a=>a!==null).length;
+    const total = S.quiz.qs.length;
+    modal.innerHTML = `
+      <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
+        <div style="font-size:1.3rem;margin-bottom:.4rem">⚠️</div>
+        <div style="font-family:var(--fd);font-size:.95rem;font-weight:700;color:var(--t1);margin-bottom:.3rem">Leave this quiz?</div>
+        <div style="font-size:.76rem;color:var(--t3);margin-bottom:1.1rem">${isExam ? answered+' of '+total+' answered' : 'Question '+(S.quiz.idx+1)+' of '+total} · ${S.quiz.ch}</div>
+        <div style="display:flex;flex-direction:column;gap:.45rem">
+          ${isExam ? '<button id="qem-finish" style="padding:.62rem;background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:var(--r2);color:var(--grn);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">✅ Submit & See Results — grade what I have answered so far</button>' : ''}
+          <button id="qem-quit" style="padding:.62rem;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);color:var(--ros);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">🚪 Quit — discard this session</button>
+          <button id="qem-cancel" style="padding:.62rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-weight:600;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">↩ Cancel — keep studying</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const close = ()=> modal.remove();
+    if(isExam){
+      document.getElementById('qem-finish').onclick = ()=>{ close(); QUIZ.submitExam(); };
+    }
+    document.getElementById('qem-quit').onclick = ()=>{
+      close();
+      QUIZ._stopTimer();
+      if(isExam) QUIZ._clearExamSnapshot();
+      S.quiz.active = false;
+      document.getElementById('quiz-wrap').style.display = 'none';
+      if(afterQuit) afterQuit();
+    };
+    document.getElementById('qem-cancel').onclick = close;
+    modal.addEventListener('click', e=>{ if(e.target===modal) close(); });
+  },
+
+  /* ── FLASHCARD MODE ── */
+  _renderFlashcard(){
+    const q = S.quiz.qs[S.quiz.idx];
+    if(!q)return;
+    try{
+      document.getElementById('fc-chip').textContent = '⚡ ' + S.quiz.ch;
+      document.getElementById('fc-ctr').textContent = `${S.quiz.idx+1}/${S.quiz.qs.length}`;
+      document.getElementById('fc-pf').style.width = `${((S.quiz.idx)/S.quiz.qs.length)*100}%`;
+      document.getElementById('fc-qn').textContent = 'Q'+(S.quiz.idx+1);
+      document.getElementById('fc-q').textContent = q.q;
+
+      const isStarred = REV.has('bk', q.uid), isFlagged = REV.has('fl', q.uid);
+      document.getElementById('fc-acts').innerHTML = `
+        <button class="ib ${isStarred?'bk-on':''}" onclick="QUIZ._star()" title="Bookmark">⭐</button>
+        <button class="ib ${isFlagged?'fl-on':''}" onclick="QUIZ._flag()" title="Flag">🚩</button>
+        <button class="ib" onclick="SRCH.toggle()" title="Search (Ctrl+F)">🔍</button>
+        <select class="sel-c" style="font-size:.68rem;padding:.2rem .35rem;width:auto" onchange="QUIZ._tagCurrent(this.value)">
+          <option value="">🏷 Tag…</option>
+          ${BK_TAGS.map(t=>`<option value="${t}" ${REV.getTag(q.uid)===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      `;
+
+      const ansIdx = S.quiz.ans[S.quiz.idx];
+      const answered = ansIdx !== null;
+      const optsEl = document.getElementById('fc-opts');
+      optsEl.innerHTML = q.options.map((opt,i)=>{
+        let cls='eo';
+        let isSelected = false;
+        if(answered){
+          const isCorrect = isOk(i, q.correct);
+          isSelected = i===ansIdx;
+          if(isCorrect) cls += ' shc';
+          else if(isSelected) cls += ' bad2';
+        }
+        return `<div class="${cls}" role="button" tabindex="${answered?-1:0}" aria-pressed="${isSelected}" aria-label="Option ${String.fromCharCode(65+i)}: ${esc(opt)}${isSelected?', selected':''}" onclick="${answered?'':'QUIZ.fcAnswer('+i+')'}" onkeydown="if((event.key==='Enter'||event.key===' ')&&!${answered}){event.preventDefault();QUIZ.fcAnswer(${i})}" style="${answered?'cursor:default;pointer-events:none':''}">
+          <div class="ok">${String.fromCharCode(65+i)}</div><div>${esc(opt)}</div>
+        </div>`;
+      }).join('');
+
+      const expl = document.getElementById('fc-expl');
+      if(answered && q.explanation){ expl.textContent = q.explanation; expl.classList.add('show'); }
+      else { expl.classList.remove('show'); expl.textContent=''; }
+
+      document.getElementById('fc-hint').textContent = answered ? 'Use Next →' : 'Tap an option to answer';
+      document.getElementById('fc-prev').disabled = S.quiz.idx===0;
+      document.getElementById('fc-next').textContent = S.quiz.idx===S.quiz.qs.length-1 ? 'Finish ✔' : 'Next →';
+
+      QUIZ._updateFcCounts();
+      renderMath(document.getElementById('fc-wrap'));
+    } catch(err){
+      console.error('[QUIZ._renderFlashcard] question at idx', S.quiz.idx, 'failed to render:', err, q);
+      toast('⚠️ Skipped a malformed question', 2000);
+      if(S.quiz.idx < S.quiz.qs.length-1){ S.quiz.idx++; QUIZ._renderFlashcard(); }
+      else QUIZ.fcFinish();
+    }
+  },
+  _updateFcCounts(){
+    let ok=0,bad=0,skip=0;
+    S.quiz.ans.forEach((a,i)=>{
+      if(a===null){ if(S.quiz.shown?.has(i)) skip++; return; }
+      if(isOk(a, S.quiz.qs[i].correct)) ok++; else bad++;
+    });
+    document.getElementById('fc-ok').textContent=ok;
+    document.getElementById('fc-bad').textContent=bad;
+    document.getElementById('fc-skip').textContent=skip;
+  },
+  fcAnswer(i){
+    if(S.quiz.ans[S.quiz.idx]!==null)return;
+    S.quiz.ans[S.quiz.idx]=i;
+    const q=S.quiz.qs[S.quiz.idx];
+    const correct=isOk(i,q.correct);
+    if(correct){ PROG.track(true); REV.trackAnswer(q, true); }
+    else { PROG.track(false); REV.trackAnswer(q, false); }
+    QUIZ._renderFlashcard();
+  },
+  fcNav(dir){
+    if(!S.quiz.shown) S.quiz.shown=new Set();
+    S.quiz.shown.add(S.quiz.idx);
+    const next = S.quiz.idx+dir;
+    if(next<0)return;
+    if(next>=S.quiz.qs.length){ QUIZ.fcFinish(); return; }
+    S.quiz.idx=next;
+    QUIZ._renderFlashcard();
+  },
+  _star(){
+    const q=S.quiz.qs[S.quiz.idx];
+    REV.toggle('bk', q);
+    QUIZ._renderFlashcard();
+  },
+  _flag(){
+    const q=S.quiz.qs[S.quiz.idx];
+    REV.toggle('fl', q);
+    QUIZ._renderFlashcard();
+  },
+  _tagCurrent(tag){
+    const q=S.quiz.qs[S.quiz.idx];
+    if(!q) return;
+    REV.setTag(q.uid, tag, q);
+    QUIZ._renderFlashcard();
+  },
+  fcFinish(){
+    QUIZ._stopTimer();
+    S.quiz.active=false;
+    STREAK.markToday();
+    QUIZ._showResults();
+  },
+
+  /* ── EXAM MODE ── */
+  _renderExam(){
+    document.getElementById('ex-chip').textContent = '📝 ' + S.quiz.ch;
+    document.getElementById('ex-tmr').textContent = fmt(S.quiz.left);
+    const el = document.getElementById('ex-qs');
+    el.innerHTML = S.quiz.qs.map((q,qi)=>{
+      const gq = encodeURIComponent(q.q.slice(0,120));
+      const savedAns = S.quiz.ans[qi];
+      return `
+      <div class="eqc${savedAns!==null?' answered':''}" id="eqc-${qi}">
+        <div class="qm"><span class="qn mono">Q${qi+1}</span><a class="ib" href="https://www.google.com/search?q=${gq}" target="_blank" rel="noopener" title="Search on Google" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px">🔍</a></div>
+        <div class="qt" style="font-size:.85rem">${esc(q.q)}</div>
+        ${q.options.map((opt,oi)=>{
+          const sel = savedAns===oi;
+          return `<div class="eo${sel?' sel':''}" role="button" tabindex="0" aria-pressed="${sel}" aria-label="Option ${String.fromCharCode(65+oi)}: ${esc(opt)}" onclick="QUIZ.exAnswer(${qi},${oi})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();QUIZ.exAnswer(${qi},${oi})}" id="eo-${qi}-${oi}">
+            <div class="ok">${String.fromCharCode(65+oi)}</div><div>${esc(opt)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `}).join('');
+    renderMath(el);
+    const answeredCount = S.quiz.ans.filter(a=>a!==null).length;
+    document.getElementById('ex-ctr').textContent = `${answeredCount}/${S.quiz.qs.length}`;
+    document.getElementById('ex-ans').textContent = answeredCount;
+    document.getElementById('ex-pf').style.width = `${(answeredCount/S.quiz.qs.length)*100}%`;
+  },
+  exAnswer(qi, oi){
+    if(!S.quiz.active)return;
+    S.quiz.ans[qi]=oi;
+    document.querySelectorAll(`#eqc-${qi} .eo`).forEach((e,i)=>{
+      const sel = i===oi;
+      e.classList.toggle('sel', sel);
+      e.setAttribute('aria-pressed', String(sel));
+    });
+    document.getElementById(`eqc-${qi}`).classList.add('answered');
+    const answered = S.quiz.ans.filter(a=>a!==null).length;
+    document.getElementById('ex-ctr').textContent = `${answered}/${S.quiz.qs.length}`;
+    document.getElementById('ex-ans').textContent = answered;
+    document.getElementById('ex-pf').style.width = `${(answered/S.quiz.qs.length)*100}%`;
+    QUIZ._snapshotExam();
+  },
+  submitExam(){
+    if(!S.quiz.active)return;
+    const unanswered = S.quiz.ans.filter(a=>a===null).length;
+    if(unanswered>0 && S.quiz.left>0 && !confirm(`${unanswered} question(s) unanswered. Submit anyway?`))return;
+    QUIZ._stopTimer();
+    QUIZ._clearExamSnapshot();
+    S.quiz.active=false;
+    STREAK.markToday();
+    S.quiz.qs.forEach((q,qi)=>{
+      document.querySelectorAll(`#eqc-${qi} .eo`).forEach((e,oi2)=>{
+        e.style.pointerEvents='none';
+        const correct = isOk(oi2,q.correct);
+        if(correct) e.classList.add('shc');
+        else if(oi2===S.quiz.ans[qi]) e.classList.add('bad2');
+      });
+      const correctPick = isOk(S.quiz.ans[qi], q.correct);
+      PROG.track(correctPick);
+      REV.trackAnswer(q, correctPick);
+    });
+    QUIZ._showResults();
+  },
+
+  /* ── RETRY ── */
+  retryWrong(){
+    const wrongIdx = S.quiz.qs.map((q,i)=>({q,i})).filter(({i})=>!isOk(S.quiz.ans[i], S.quiz.qs[i].correct));
+    if(!wrongIdx.length){ toast('🎉 Nothing to retry — all correct!'); UI.go('home'); return; }
+    QUIZ.startWith(wrongIdx.map(x=>x.q), 'flashcard', S.quiz.ch + ' (Retry)');
+  },
+
+  /* ── RESULTS ── */
   _showResults(){
     document.getElementById('fc-wrap').style.display='none';
     document.getElementById('ex-wrap').style.display='none';
@@ -1005,16 +1466,28 @@ const QUIZ = {
     if (typeof CLOUD !== 'undefined' && CLOUD.backup) {
       CLOUD.backup(true);
     }
-  },
-
-  quit(){ /* ... */ },
-  _exitGuard(afterQuit){ /* ... */ },
-  checkResumableExam(){ /* ... */ },
-  _snapshotExam(){ /* ... */ },
-  _clearExamSnapshot(){ /* ... */ },
-  _resumeSnapshot(snap, adjustedLeft){ /* ... */ },
-  // (The rest of QUIZ unchanged)
+  }
 };
+
+/* keyboard support during quizzes */
+document.addEventListener('keydown', e=>{
+  if(!S.quiz.active) return;
+  if(document.getElementById('quiz-wrap').style.display==='none') return;
+  if(e.key==='Escape'){ if(S.quiz.active) QUIZ.quit(); }
+  if(S.quiz.mode!=='exam'){
+    if(e.key==='ArrowRight') QUIZ.fcNav(1);
+    if(e.key==='ArrowLeft') QUIZ.fcNav(-1);
+    if(['1','2','3','4','5'].includes(e.key)){
+      const i=Number(e.key)-1;
+      if(S.quiz.qs[S.quiz.idx]?.options[i]!==undefined) QUIZ.fcAnswer(i);
+    }
+    const letterIdx = 'abcdABCD'.indexOf(e.key);
+    if(letterIdx > -1){
+      const i = letterIdx % 4;
+      if(S.quiz.qs[S.quiz.idx]?.options[i]!==undefined) QUIZ.fcAnswer(i);
+    }
+  }
+});
 
 /* ═══════════════ 10a. PROGRESS TRACKING ═══════════════ */
 const PROG = {
@@ -1030,8 +1503,46 @@ const PROG = {
     _save(LS.PROG, S.prog);
     HOME.render();
   },
-  predict(){ /* ... (same as before) */ },
-  renderPredict(){ /* ... */ },
+  predict(){
+    const sessions = S.prog.sessions.filter(s=>s.total>0).slice(0,20);
+    if(sessions.length < 3) return null;
+    let wSum=0, vSum=0;
+    sessions.forEach((s,i)=>{
+      const recencyW = 1 - (i/sessions.length)*0.5;
+      const modeW = s.mode==='exam' ? 1.5 : 1.0;
+      const w = recencyW * modeW;
+      vSum += (s.pct||0) * w;
+      wSum += w;
+    });
+    const predicted = Math.round(vSum/wSum);
+    const pcts = sessions.map(s=>s.pct||0);
+    const mean = pcts.reduce((a,b)=>a+b,0)/pcts.length;
+    const variance = pcts.reduce((a,b)=>a+(b-mean)**2,0)/pcts.length;
+    const stdDev = Math.round(Math.sqrt(variance));
+    const confidence = sessions.length>=10 && stdDev<15 ? 'High' : sessions.length>=5 ? 'Medium' : 'Low';
+    return { predicted, margin: Math.max(3,stdDev), confidence, sampleSize: sessions.length };
+  },
+  renderPredict(){
+    const el = document.getElementById('predict-card');
+    if(!el) return;
+    const p = PROG.predict();
+    if(!p){
+      el.innerHTML = `<div class="card"><div class="card-hd"><h3>🎯 Predicted Exam Score</h3></div>
+        <div class="empty"><div class="empty-i">🎯</div><p>Complete at least 3 quizzes (exam mode helps most) to unlock a prediction</p></div></div>`;
+      return;
+    }
+    const barColor = p.predicted>=70?'var(--grn)':p.predicted>=50?'var(--amb)':'var(--ros)';
+    const confColor = p.confidence==='High'?'tg':p.confidence==='Medium'?'ta':'tr';
+    el.innerHTML = `<div class="card">
+      <div class="card-hd"><h3>🎯 Predicted Exam Score</h3><span class="ctag ${confColor}">${p.confidence} confidence</span></div>
+      <div style="display:flex;align-items:baseline;gap:.5rem;margin:.3rem 0 .5rem">
+        <span style="font-size:2rem;font-weight:800;color:var(--t1);font-family:var(--fd)">${p.predicted}%</span>
+        <span style="font-size:.76rem;color:var(--t3)">± ${p.margin}% · based on your last ${p.sampleSize} session${p.sampleSize!==1?'s':''}</span>
+      </div>
+      <div class="pb"><div class="pb-f" style="width:${p.predicted}%;background:${barColor}"></div></div>
+      <div style="font-size:.7rem;color:var(--t3);margin-top:.55rem">Recent and exam-mode sessions count more. Not a guarantee — use it to gauge where you stand.</div>
+    </div>`;
+  },
   render(){
     PROG.renderPredict();
     const total=S.prog.total, correct=S.prog.correct, wrong=total-correct;
@@ -1042,74 +1553,719 @@ const PROG = {
       <div class="sc"><div class="sv tb2">${wrong}</div><div class="sl">Wrong</div></div>
       <div class="sc"><div class="sv ta2">${pct}%</div><div class="sl">Accuracy</div></div>
     `;
-    // Chapter breakdown (unchanged)
+    const byChap = {};
+    S.prog.sessions.forEach(s=>{
+      const k=s.chapter||'Unknown';
+      if(!byChap[k]) byChap[k]={correct:0,total:0,sessions:0,lastAt:0};
+      byChap[k].correct+=s.correct||0;
+      byChap[k].total+=s.total||0;
+      byChap[k].sessions++;
+      if((s.at||0)>byChap[k].lastAt) byChap[k].lastAt=s.at||0;
+    });
+    const chapEl = document.getElementById('chap-acc');
+    const entries = Object.entries(byChap).sort((a,b)=>b[1].lastAt-a[1].lastAt);
+    if(!entries.length){
+      chapEl.innerHTML = '<div class="empty"><div class="empty-i">📊</div><p>Complete a quiz to see chapter breakdowns</p></div>';
+    } else {
+      const weak = entries.filter(([,d])=> d.total>=5 && d.total ? Math.round((d.correct/d.total)*100)<60 : false);
+      const weakHtml = weak.length ? `
+        <div style="background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:.8rem">
+          <div style="font-size:.72rem;font-weight:800;color:var(--ros);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">⚠️ Weak Topics — needs attention</div>
+          ${weak.map(([name,d])=>{
+            const p=d.total?Math.round((d.correct/d.total)*100):0;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.2rem 0;font-size:.76rem"><span style="color:var(--t2)">${esc(name)}</span><span class="ctag tr">${p}%</span></div>`;
+          }).join('')}
+          <div style="margin-top:.5rem;font-size:.7rem;color:var(--t3)">Tip: Use ❌ Wrong Bank to drill these topics</div>
+        </div>` : '';
+      chapEl.innerHTML = weakHtml + entries.map(([name,d])=>{
+        const p = d.total ? Math.round((d.correct/d.total)*100) : 0;
+        const barColor = p>=70?'var(--grn)':p>=50?'var(--amb)':'var(--ros)';
+        return `<div class="pb-w">
+          <div class="pb-l">
+            <span style="font-size:.78rem">${esc(name)}</span>
+            <div style="display:flex;align-items:center;gap:.35rem">
+              <span style="font-size:.68rem;color:var(--t3)">${d.sessions} session${d.sessions!==1?'s':''} · ${d.correct}/${d.total}</span>
+              <span class="ctag t${p>=70?'g':p>=50?'a':'r'}" style="font-size:.65rem">${p}%</span>
+            </div>
+          </div>
+          <div class="pb"><div class="pb-f" style="width:${p}%;background:${barColor}"></div></div>
+        </div>`;
+      }).join('');
+    }
   }
 };
 
 /* ═══════════════ 10a2. ONLINE STUDY — SCOPE PROGRESS ═══════════════ */
-/* (include all scopeLeaves, CNT, scopedStats, ONPROG unchanged) */
-// ... (they remain identical to the earlier versions, no changes needed)
+function scopeLeaves(lv,ch,book,sub){
+  let refs;
+  if(!lv){ refs = ChapterData.allFileRefs(); }
+  else if(!ch){
+    refs=[];
+    Object.keys(ChapterData.chapters(lv)).forEach(c=>refs.push(...ChapterData.chapterFileRefs(lv,c)));
+  } else {
+    refs = ChapterData.chapterFileRefs(lv,ch);
+  }
+  if(book) refs = refs.filter(r=>r.book===book);
+  if(sub) refs = refs.filter(r=>r.subtopic===sub);
+  return refs;
+}
+
+const CNT_AUTO_LIMIT = 20;
+
+const CNT = {
+  async forFile(ref){
+    if(!ref.fid) return null;
+    if(S.fcount[ref.fid]!=null) return S.fcount[ref.fid];
+    try{
+      const raw = await QUIZ._fetch(ref.fid, ref.key);
+      const n = normQ(raw, ref.fid).length;
+      S.fcount[ref.fid]=n;
+      _save(LS.FCOUNT,S.fcount);
+      return n;
+    }catch{ return null; }
+  },
+  knownTotal(leaves){
+    let sum=0, unknown=0;
+    leaves.forEach(ref=>{
+      const n = S.fcount[ref.fid];
+      if(n==null) unknown++; else sum+=n;
+    });
+    return {total:sum, files:leaves.length, unknown};
+  },
+  async totalFor(lv,ch,book,sub,{force=false, onTick}={}){
+    const leaves = scopeLeaves(lv,ch,book,sub);
+    const known = CNT.knownTotal(leaves);
+    if(known.unknown===0) return known;
+    if(!force && leaves.length>CNT_AUTO_LIMIT) return {...known, needsConfirm:true};
+    let sum=0, unknown=0, done=0;
+    const CONC=4; let i=0;
+    async function worker(){
+      while(i<leaves.length){
+        const ref=leaves[i++];
+        const n = await CNT.forFile(ref);
+        if(n==null) unknown++; else sum+=n;
+        done++; onTick&&onTick(done,leaves.length);
+      }
+    }
+    await Promise.all(Array.from({length:Math.max(1,Math.min(CONC,leaves.length))},worker));
+    return {total:sum, files:leaves.length, unknown};
+  }
+};
+
+function scopedStats(lv,ch,book,sub){
+  const uids=new Set();
+  let attempted=0, correct=0, wrong=0;
+  S.prog.sessions.forEach(s=>{
+    if(!s.lv) return;
+    if(lv && s.lv!==lv) return;
+    if(ch && s.ch!==ch) return;
+    if(book && s.book!==book) return;
+    if(sub && s.sub!==sub) return;
+    correct += s.correct||0;
+    wrong += s.wrong||0;
+    attempted += (s.correct||0)+(s.wrong||0);
+    (s.qres||[]).forEach(q=>{ if(q&&q.uid) uids.add(q.uid); });
+  });
+  return {practised:uids.size, attempted, correct, wrong};
+}
+
+const ONPROG = {
+  metric:'practised',
+  _seq:0,
+  setMetric(m){
+    ONPROG.metric = m;
+    document.querySelectorAll('#on-prog-tabs .mtab').forEach(b=>b.classList.toggle('active', b.dataset.m===m));
+    ONPROG.render();
+  },
+  _scope(){
+    const lv = document.getElementById('on-lv')?.value || '';
+    const ch = document.getElementById('on-ch')?.value || '';
+    const book = document.getElementById('on-bk')?.value || '';
+    const ts = document.getElementById('on-to');
+    const opt = ts && ts.selectedIndex>=0 ? ts.options[ts.selectedIndex] : null;
+    const valid = opt && opt.dataset && opt.dataset.sub && !opt.disabled;
+    return {lv, ch, book, sub: valid?opt.dataset.sub:'', fid: valid?opt.value:''};
+  },
+  async render(force=false){
+    const el = document.getElementById('on-progress-card');
+    const titleEl = document.getElementById('on-prog-title');
+    const bodyEl = document.getElementById('on-prog-body');
+    if(!el||!titleEl||!bodyEl) return;
+    const {lv,ch,book,sub,fid} = ONPROG._scope();
+    const mySeq = ++ONPROG._seq;
+
+    if(!lv){
+      titleEl.textContent = '📊 Overall Progress';
+      const total=S.prog.total, correct=S.prog.correct, wrong=total-correct;
+      const pct = total ? Math.round((correct/total)*100) : 0;
+      bodyEl.innerHTML = `
+        <div class="prog-grid">
+          <div class="sc"><div class="sv tcy">${total}</div><div class="sl">Attempted</div></div>
+          <div class="sc"><div class="sv tc2">${correct}</div><div class="sl">Correct</div></div>
+          <div class="sc"><div class="sv tb2">${wrong}</div><div class="sl">Wrong</div></div>
+        </div>
+        <div class="pb-w" style="margin-top:.6rem"><div class="pb-l"><span>Accuracy</span><span>${pct}%</span></div><div class="pb"><div class="pb-f" style="width:${pct}%"></div></div></div>
+        <div style="font-size:.68rem;color:var(--t3);margin-top:.5rem">Pick a Level, Chapter, Book or Subtopic above to see coverage for that scope.</div>`;
+      return;
+    }
+
+    const lvLabel = document.getElementById('on-lv').selectedOptions[0]?.textContent.replace(/^📖\s*/,'') || lv;
+    const label = fid ? `${ChapterData.chapterName(lv,ch)} — ${book} — ${sub}`
+      : book ? `${ChapterData.chapterName(lv,ch)} — ${book}`
+      : ch ? ChapterData.chapterName(lv,ch)
+      : lvLabel;
+    titleEl.textContent = `📊 ${label}`;
+
+    const scoped = scopedStats(lv,ch,book,sub);
+    const leaves = scopeLeaves(lv,ch,book,sub);
+    const known = CNT.knownTotal(leaves);
+
+    const paint = (info)=>{
+      if(mySeq!==ONPROG._seq) return;
+      const total = info.total;
+      const vals = {practised:scoped.practised, attempted:scoped.attempted, correct:scoped.correct, wrong:scoped.wrong};
+      const metricVal = vals[ONPROG.metric];
+      const metricLabel = {practised:'Practised',attempted:'Attempted',correct:'Correct',wrong:'Wrong'}[ONPROG.metric];
+      const barColor = ONPROG.metric==='wrong' ? 'var(--ros)' : ONPROG.metric==='correct' ? 'var(--grn)' : 'var(--amb)';
+      const pct = total ? Math.min(100, Math.round((metricVal/total)*100)) : 0;
+      const unknownNote = info.unknown ? `<div style="font-size:.66rem;color:var(--t3);margin-top:.45rem">⚠️ ${info.unknown} of ${info.files} file${info.files>1?'s':''} not counted yet (offline, or not cached)</div>` : '';
+      const confirmBtn = info.needsConfirm ? `<button class="btn btn-sm btn-a" style="margin-top:.5rem" onclick="ONPROG.render(true)">🔢 Count questions (${info.files} files)</button>` : '';
+      bodyEl.innerHTML = `
+        <div class="prog-grid">
+          <div class="sc"><div class="sv tcy">${scoped.practised}</div><div class="sl">Practised</div></div>
+          <div class="sc"><div class="sv ta2">${scoped.attempted}</div><div class="sl">Attempted</div></div>
+          <div class="sc"><div class="sv tc2">${scoped.correct}</div><div class="sl">Correct</div></div>
+          <div class="sc"><div class="sv tb2">${scoped.wrong}</div><div class="sl">Wrong</div></div>
+        </div>
+        ${info.needsConfirm ? confirmBtn : `
+          <div class="pb-w" style="margin-top:.65rem">
+            <div class="pb-l"><span>${metricLabel} coverage</span><span>${metricVal} / ${total||'?'} (${pct}%)</span></div>
+            <div class="pb"><div class="pb-f" style="width:${pct}%;background:${barColor}"></div></div>
+          </div>`}
+        ${unknownNote}
+      `;
+    };
+
+    if(known.unknown===0){ paint(known); return; }
+    bodyEl.innerHTML = `<div class="empty" style="padding:.8rem 0"><div class="empty-i">⏳</div><p>Counting questions…</p></div>`;
+    const info = await CNT.totalFor(lv,ch,book,sub,{force, onTick:(done,files)=>{
+      if(mySeq!==ONPROG._seq) return;
+      const p = bodyEl.querySelector('p');
+      if(p && files>1) p.textContent = `Counting questions… ${done}/${files} files`;
+    }});
+    paint(info);
+  }
+};
 
 /* ═══════════════ 10b. STREAK ═══════════════ */
 const STREAK = {
-  markToday(){ /* ... */ },
-  currentStreak(){ /* ... */ },
-  renderBar(){ /* ... */ }
+  markToday(){
+    const t = today();
+    if(!S.stk.days.includes(t)) S.stk.days.push(t);
+    S.stk.last = t;
+    S.stk.days = S.stk.days.slice(-60);
+    _save(LS.STK, S.stk);
+    HOME.render();
+  },
+  currentStreak(){
+    let n=0; let d=new Date();
+    while(true){
+      const ds=d.toISOString().slice(0,10);
+      if(S.stk.days.includes(ds)){ n++; d.setDate(d.getDate()-1); }
+      else break;
+    }
+    return n;
+  },
+  renderBar(){
+    const el = document.getElementById('sk-bar');
+    if(!el)return;
+    const days=[];
+    const d=new Date();
+    for(let i=6;i>=0;i--){
+      const dd=new Date(d); dd.setDate(d.getDate()-i);
+      days.push(dd.toISOString().slice(0,10));
+    }
+    el.innerHTML = days.map(ds=>{
+      const done = S.stk.days.includes(ds);
+      const isToday = ds===today();
+      const label = new Date(ds).toLocaleDateString(undefined,{weekday:'short'})[0];
+      return `<div class="sk-d ${done?'done':''} ${isToday?'today':''}">${label}</div>`;
+    }).join('');
+    document.getElementById('stk-tag').textContent = `🔥 ${STREAK.currentStreak()} day streak`;
+  }
 };
 
 /* ═══════════════ 10c. HOME / DASHBOARD ═══════════════ */
 const HOME = {
   render(){
-    // ... (full implementation as previously shown) ...
+    const h=new Date().getHours();
+    const G=[
+      {t:'Burning midnight oil?',i:'🌙',r:[0,5]},
+      {t:'Good morning!',i:'🌅',r:[5,12]},
+      {t:'Good afternoon!',i:'☀️',r:[12,17]},
+      {t:'Good evening!',i:'🌆',r:[17,21]},
+      {t:'Working late?',i:'🌙',r:[21,24]}
+    ];
+    const g=G.find(x=>h>=x.r[0]&&h<x.r[1])||G[1];
+    const gt=document.getElementById('greeting-title'); if(gt) gt.textContent=g.t;
+    const gi=document.getElementById('greeting-icon'); if(gi) gi.textContent=g.i;
+    document.getElementById('greeting').textContent = `${S.user?.name||S.user?.username||'Student'} — Nepal Engineering & PSC exam prep.`;
+    HOME.updateStats();
+    HOME.updateBadges();
+    STREAK.renderBar();
+    HOME.renderRecent();
+    HOME.tickClock();
   },
-  updateStats(){ /* ... */ },
-  updateBadges(){ /* ... */ },
-  renderRecent(){ /* ... */ },
+  updateStats(){
+    const total=S.prog.total, correct=S.prog.correct, wrong=total-correct;
+    const pct = total ? Math.round((correct/total)*100) : 0;
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+    set('hs-tot', total); set('hs-cor', correct); set('hs-wrg', wrong); set('hs-pct', pct+'%');
+  },
+  updateBadges(){
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+    const dueWr = REV.dueCount();
+    set('bkc', S.bk.length); set('flc', S.fl.length); set('wrc', S.wr.length);
+    const wrDueEl = document.getElementById('wrc-due');
+    if(wrDueEl) wrDueEl.textContent = dueWr;
+    const total = S.bk.length + S.fl.length + dueWr;
+    const bnBadge = document.getElementById('bn-badge');
+    if(bnBadge){
+      if(total>0){ bnBadge.textContent = total>99?'99+':total; bnBadge.style.display=''; }
+      else { bnBadge.style.display='none'; }
+    }
+  },
+  renderRecent(){
+    const el = document.getElementById('recent-sessions');
+    if(!el)return;
+    const sessions = S.prog.sessions.slice(0,6);
+    if(!sessions.length){ el.innerHTML='<div class="empty"><div class="empty-i">📈</div><p>No sessions yet — start a quiz!</p></div>'; return; }
+    const mIc=m=>m==='exam'?'📝':m==='flashcard'?'⚡':'📊';
+    el.innerHTML = sessions.map(s=>{
+      const ic=(s.chapter||'').includes('Wrong')?'❌':(s.chapter||'').includes('Daily')?'🌟':(s.chapter||'').includes('Bookmarks')?'⭐':mIc(s.mode);
+      const cls=s.pct>=70?'tg':s.pct>=40?'ta':'tr';
+      const dt=new Date(s.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<div class="sess-row"><span class="sess-ic">${ic}</span><div class="sess-info"><div class="sess-ch">${esc(s.chapter||'Study')}</div><div class="sess-ts">${dt}</div></div><span class="ctag ${cls}">${s.pct}%</span></div>`;
+    }).join('');
+  },
   _clockTimer:null,
-  tickClock(){ /* ... */ }
+  tickClock(){
+    if(HOME._clockTimer) clearInterval(HOME._clockTimer);
+    const tick=()=>{
+      const now=new Date();
+      const cl=document.getElementById('hclock'); if(cl) cl.textContent=now.toLocaleTimeString();
+      const dt=document.getElementById('hdate'); if(dt) dt.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      TT.renderCurrentSessionWidget('h-session');
+    };
+    tick();
+    HOME._clockTimer=setInterval(tick,1000);
+  }
 };
 
 /* ═══════════════ 10d. TIMETABLE ═══════════════ */
 const TT = {
-  add(){ /* ... */ },
-  remove(id){ /* ... */ },
+  add(){
+    const day=Number(document.getElementById('tt-day').value);
+    const name=document.getElementById('tt-name').value.trim();
+    const start=document.getElementById('tt-s').value;
+    const end=document.getElementById('tt-e').value;
+    if(!name||!start||!end){ toast('Fill in all fields'); return; }
+    S.tt.sessions.push({id:Date.now()+'', day, name, start, end});
+    _save(LS.TT, S.tt);
+    document.getElementById('tt-name').value='';
+    TT.render();
+    toast('✅ Session added');
+  },
+  remove(id){
+    S.tt.sessions = S.tt.sessions.filter(s=>s.id!==id);
+    _save(LS.TT, S.tt);
+    TT.render();
+  },
   _clockTimer:null,
-  render(){ /* ... */ },
-  renderCurrentSessionWidget(elId){ /* ... */ },
-  exportJ(){ /* ... */ },
-  importJ(){ /* ... */ }
+  render(){
+    if(TT._clockTimer) clearInterval(TT._clockTimer);
+    const tick=()=>{
+      const now=new Date();
+      const cl=document.getElementById('tt-clock'); if(cl) cl.textContent=now.toLocaleTimeString();
+      const dt=document.getElementById('tt-date'); if(dt) dt.textContent=now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      TT.renderCurrentSessionWidget('tt-now');
+    };
+    tick();
+    TT._clockTimer=setInterval(tick,1000);
+
+    const todayDay = new Date().getDay();
+    const nowHHMM = new Date().toTimeString().slice(0,5);
+    const todaySessions = S.tt.sessions.filter(s=>s.day===todayDay).sort((a,b)=>a.start.localeCompare(b.start));
+    const todayEl = document.getElementById('tt-today');
+    todayEl.innerHTML = todaySessions.length ? todaySessions.map(s=>{
+      const isNow = s.start<=nowHHMM && nowHHMM<s.end;
+      return `
+      <div class="tt-row" style="${isNow?'background:rgba(245,166,35,.08);border-radius:8px;padding-left:.4rem':''}">
+        <div class="tt-ti">${s.start}–${s.end}</div>
+        <div class="tt-na">${isNow?'🔴 ':''}${esc(s.name)}</div>
+        <button class="ib" onclick="TT.remove('${s.id}')">🗑</button>
+      </div>
+    `;}).join('') : '<div class="empty"><div class="empty-i">📅</div><p>Nothing scheduled today</p></div>';
+
+    const weekEl = document.getElementById('tt-week');
+    const todayIdx = new Date().getDay();
+    weekEl.innerHTML = `
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(78px,1fr));gap:4px;margin-bottom:.5rem;min-width:560px">
+        ${DAYS.map((d,i)=>`
+          <div style="text-align:center;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+            color:${i===todayIdx?'var(--neon)':'var(--t3)'};
+            padding:.3rem .2rem;
+            border-bottom:2px solid ${i===todayIdx?'var(--neon)':'var(--bd)'}">
+            ${d.slice(0,3)}
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(78px,1fr));gap:4px;align-items:start;min-width:560px">
+        ${DAYS.map((d,di)=>{
+          const sess = S.tt.sessions.filter(s=>s.day===di).sort((a,b)=>a.start.localeCompare(b.start));
+          const isToday = di===todayIdx;
+          return `<div style="min-height:60px;background:${isToday?'rgba(0,229,255,.04)':'var(--bg1)'};border-radius:var(--r1);border:1px solid ${isToday?'rgba(0,229,255,.18)':'var(--bd)'};padding:.3rem .25rem">
+            ${sess.length ? sess.map(s=>`
+              <div style="background:${isToday?'rgba(0,229,255,.1)':'var(--surf2)'};border:1px solid ${isToday?'rgba(0,229,255,.25)':'var(--bd)'};border-radius:6px;padding:.28rem .35rem;margin-bottom:3px;cursor:default"
+                title="${esc(s.name)} ${s.start}–${s.end}">
+                <div style="font-size:.6rem;font-weight:700;color:${isToday?'var(--neon)':'var(--t3)'}">${s.start}</div>
+                <div style="font-size:.65rem;font-weight:600;color:var(--t1);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(s.name)}</div>
+                <button onclick="TT.remove('${s.id}')" style="background:none;border:none;color:var(--t3);font-size:.65rem;cursor:pointer;padding:0;float:right">✕</button>
+              </div>
+            `).join('') : `<div style="text-align:center;color:var(--t3);font-size:.6rem;margin-top:.5rem">—</div>`}
+          </div>`;
+        }).join('')}
+      </div>
+      </div>
+    `;
+  },
+  renderCurrentSessionWidget(elId){
+    const el=document.getElementById(elId);
+    if(!el)return;
+    const now=new Date();
+    const hhmm = now.toTimeString().slice(0,5);
+    const todayDay = now.getDay();
+    const active = S.tt.sessions.find(s=>s.day===todayDay && s.start<=hhmm && hhmm<s.end);
+    const next = S.tt.sessions.filter(s=>s.day===todayDay && s.start>hhmm).sort((a,b)=>a.start.localeCompare(b.start))[0];
+    if(active){
+      el.innerHTML = `<div class="tt-now"><div class="tt-nl">Now</div><div class="tt-nn">${esc(active.name)}</div><div class="tt-nt">until ${active.end}</div></div>`;
+    } else if(next){
+      el.innerHTML = `<div class="tt-now"><div class="tt-nl">Next</div><div class="tt-nn">${esc(next.name)}</div><div class="tt-nt">starts ${next.start}</div></div>`;
+    } else {
+      el.innerHTML = `<div style="font-size:.74rem;color:var(--t3);text-align:center;padding:.4rem 0">No more sessions today</div>`;
+    }
+  },
+  exportJ(){
+    const blob=new Blob([JSON.stringify(S.tt,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='timetable.json';a.click();
+  },
+  importJ(){
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=()=>{
+      const f=inp.files[0]; if(!f)return;
+      const r=new FileReader();
+      r.onload=e=>{
+        try{
+          const data=JSON.parse(e.target.result);
+          if(data && Array.isArray(data.sessions)){ S.tt=data; _save(LS.TT,S.tt); TT.render(); toast('✅ Timetable imported'); }
+          else toast('❌ Invalid timetable file');
+        }catch{toast('❌ Invalid JSON')}
+      };
+      r.readAsText(f);
+    };
+    inp.click();
+  }
 };
 
 /* ═══════════════ 10e. OFFLINE CACHE ═══════════════ */
 const CACHE = {
-  async render(){ /* ... */ },
-  async dl(){ /* ... */ },
-  async clr(){ /* ... */ },
-  async purgeStale(){ /* ... */ },
-  async autoSync(){ /* ... */ },
-  _badge(msg){ /* ... */ }
+  async render(){
+    const refs = ChapterData.allFileRefs();
+    const cachedKeys = new Set(await QDB.keys());
+    function _isCached(key){ return cachedKeys.has(key); }
+    let cachedCount=0;
+    refs.forEach(r=>{ if(_isCached(r.key)) cachedCount++; });
+    const tag=document.getElementById('cache-tag');
+    tag.textContent = cachedCount===refs.length && refs.length ? 'Fully cached' : cachedCount>0 ? 'Partially cached' : 'Not cached';
+    tag.className = 'ctag ' + (cachedCount===refs.length && refs.length ? 'tg' : cachedCount>0 ? 'ta' : 'tr');
+    document.getElementById('cache-txt').textContent = `${cachedCount} of ${refs.length} question sets cached on this device for offline use.`;
+
+    const grid=document.getElementById('cache-grid');
+    const levels = ChapterData.levels();
+    grid.innerHTML = levels.map(lv=>{
+      const lvRefs = refs.filter(r=>r.lv===lv);
+      const lvCached = lvRefs.filter(r=>_isCached(r.key)).length;
+      return `<div class="ci"><div class="ci-n">${esc(ChapterData.levelLabel(lv))}</div>
+        <div class="ci-s"><div class="cd ${lvCached===lvRefs.length&&lvRefs.length?'y':'n'}"></div>${lvCached}/${lvRefs.length} cached</div></div>`;
+    }).join('');
+  },
+  async dl(){
+    const refs = ChapterData.allFileRefs();
+    if(!refs.length){ toast('No content configured to cache'); return; }
+    if(!S.online){ toast('❌ You need to be online to download the cache'); return; }
+    const pb=document.getElementById('cpb'), pf=document.getElementById('cpf'), txt=document.getElementById('cptxt');
+    pb.style.display='';
+    let done=0, failed=0;
+    for(const ref of refs){
+      txt.textContent = `Caching: ${ref.name} (${done+1}/${refs.length})…`;
+      pf.style.width = `${(done/refs.length)*100}%`;
+      try{
+        await QUIZ._fetch(ref.fid, ref.key);
+      }catch(err){
+        failed++;
+        txt.textContent = `⚠️ Failed: ${ref.name} — retrying…`;
+        try{ await new Promise(r=>setTimeout(r,2000)); await QUIZ._fetch(ref.fid, ref.key); failed--; }catch{}
+      }
+      done++;
+      pf.style.width = `${(done/refs.length)*100}%`;
+    }
+    const ok = done - failed;
+    txt.textContent = failed>0 ? `⚠️ Cached ${ok}/${refs.length} sets (${failed} failed — check connection)` : `✅ All ${done} sets cached successfully`;
+    toast(failed>0 ? `⚠️ ${ok}/${refs.length} cached — ${failed} failed` : '✅ Offline cache complete');
+    CACHE.render();
+  },
+  async clr(){
+    if(!confirm('Clear all cached question data? You will need internet to reload it.'))return;
+    await QDB.clear();
+    toast('🗑 Cache cleared');
+    CACHE.render();
+  },
+  async purgeStale(){
+    let purged = 0;
+    const keys = await QDB.keys();
+    for(const k of keys){
+      const v = await QDB.get(k);
+      if(v && typeof v === 'object' && !Array.isArray(v) && v.success === false){
+        await QDB.del(k);
+        purged++;
+      }
+    }
+    if(purged > 0){ toast(`🧹 Removed ${purged} stale error cache entry${purged>1?'s':''}`); CACHE.render(); }
+    else toast('✅ No stale cache entries found');
+  },
+
+  async autoSync(){
+    if(!S.online || S.forcedOffline) return;
+    const cachedKeys = new Set(await QDB.keys());
+    const missing = ChapterData.allFileRefs().filter(r=>!cachedKeys.has(r.key));
+    if(!missing.length) return;
+    CACHE._badge(`📦 Syncing 0/${missing.length}…`);
+    let done=0;
+    for(const ref of missing){
+      try{ await QUIZ._fetch(ref.fid, ref.key); }catch{ /* skip failures quietly */ }
+      done++;
+      CACHE._badge(`📦 Syncing ${done}/${missing.length}…`);
+    }
+    CACHE._badge(null);
+    if(UI.cur==='offline') CACHE.render();
+  },
+  _badge(msg){
+    let el = document.getElementById('cache-autobadge');
+    if(msg===null){ if(el) el.style.display='none'; return; }
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'cache-autobadge';
+      el.style.cssText = 'position:fixed;bottom:calc(var(--bn-h,0px) + 1rem + var(--safe-b,0px));right:1rem;background:var(--c2);border:1px solid var(--bd);border-radius:999px;padding:.4rem .8rem;font-size:.7rem;color:var(--t2);z-index:9998;box-shadow:var(--sh3);display:flex;align-items:center;gap:.4rem';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'flex';
+  }
 };
 
 /* ═══════════════ 10f. DATA MANAGEMENT ═══════════════ */
 const DATA = {
-  async syncNow(){ /* ... */ },
-  async restoreCloud(){ /* ... */ },
-  exp(){ /* ... */ },
-  imp(){ /* ... */ },
-  async clearQ(){ /* ... */ },
-  reset(){ /* ... */ }
+  async syncNow(){
+    if(!S.online){ toast('❌ Need internet to back up'); return; }
+    PSYNC._setStatus('Backing up…');
+    await PSYNC.pushNow();
+  },
+  async restoreCloud(){
+    if(!S.online){ toast('❌ Need internet to restore'); return; }
+    if(!confirm('Replace progress, bookmarks, flags, and wrong-answer bank on THIS device with your last cloud backup? This cannot be undone.')) return;
+    PSYNC._setStatus('Restoring…');
+    await PSYNC.forceRestore();
+  },
+  exp(){
+    const payload = { prog:S.prog, bk:S.bk, fl:S.fl, wr:S.wr, tt:S.tt, stk:S.stk, exportedAt:new Date().toISOString() };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hamro-afnai-backup.json';a.click();
+    toast('📤 Exported');
+  },
+  imp(){
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=()=>{
+      const f=inp.files[0]; if(!f)return;
+      const r=new FileReader();
+      r.onload=e=>{
+        try{
+          const data=JSON.parse(e.target.result);
+          if(data.prog){ S.prog=data.prog; if(typeof migrateSessionScopes === 'function') migrateSessionScopes(); _save(LS.PROG,S.prog); }
+          if(data.bk){ S.bk=data.bk; _save(LS.BK,S.bk); }
+          if(data.fl){ S.fl=data.fl; _save(LS.FL,S.fl); }
+          if(data.wr){ S.wr=data.wr; _save(LS.WR,S.wr); }
+          if(data.tt){ S.tt=data.tt; _save(LS.TT,S.tt); }
+          if(data.stk){ S.stk=data.stk; _save(LS.STK,S.stk); }
+          toast('✅ Data imported');
+          HOME.render(); PROG.render();
+        }catch{ toast('❌ Invalid backup file'); }
+      };
+      r.readAsText(f);
+    };
+    inp.click();
+  },
+  async clearQ(){
+    if(!confirm('Clear cached question downloads? Your progress/bookmarks stay intact.'))return;
+    await QDB.clear();
+    toast('🧹 Question cache cleared');
+  },
+  reset(){
+    if(!confirm('⚠️ This deletes ALL progress, bookmarks, flags, wrong answers, and timetable on this device. Continue?'))return;
+    if(!confirm('Are you absolutely sure? This cannot be undone.'))return;
+    [LS.PROG,LS.BK,LS.FL,LS.WR,LS.TT,LS.STK].forEach(k=>localStorage.removeItem(k));
+    toast('⚠️ All data reset');
+    location.reload();
+  }
 };
 
 /* ═══════════════ TUTORIAL ═══════════════ */
 const TUTORIAL = {
   _seenKey: 'ha_tut_seen',
-  _steps: [ /* ... (steps as before) */ ],
+  _steps: [
+    {
+      icon: '👋',
+      title: 'Welcome to HAMRO AFNAI',
+      body: `<p>This is your Smart Study Hub for Nepal Engineering (Level 5/7) and PSC/Loksewa prep. Once a chapter is cached it works fully offline — handy for load-shedding or weak signal.</p>`
+    },
+    {
+      icon: '🔑',
+      title: 'Your account status',
+      body: `
+        <p>Check the sidebar under your name for your current status:</p>
+        <ul style="margin:0 0 0 1.1rem;padding:0">
+          <li><b>⏳ Trial</b> — free access, counts down live. Pay anytime from the payment screen to go permanent.</li>
+          <li><b>✅ Permanent</b> — verified, unlimited access forever, fully usable offline.</li>
+          <li><b>📅 Yearly</b> — active until the renewal date shown in the sidebar.</li>
+        </ul>
+        <p style="margin-top:.5rem">Once you're Trial, Permanent, or active Yearly, you land straight here next time — no re-login needed on this device, even offline.</p>`
+    },
+    {
+      icon: '🏠',
+      title: 'Your Dashboard',
+      body: `
+        <p>The Dashboard (🏠) is home base:</p>
+        <ul style="margin:0 0 0 1.1rem;padding:0">
+          <li><b>🌟 Daily Challenge</b> — 30 mixed questions, keeps your streak alive.</li>
+          <li><b>⚡ Adaptive Practice</b> — pulls the questions you're actually struggling with first.</li>
+          <li>Quick stats and Quick Action tiles for everything else in the app.</li>
+        </ul>`
+    },
+    {
+      icon: '📚',
+      title: 'Studying a chapter',
+      body: `
+        <p>Open <b>Online Study</b> or <b>Local File</b> from the sidebar, pick a chapter, choose how many questions and whether to shuffle, then pick a mode:</p>
+        <ul style="margin:0 0 0 1.1rem;padding:0">
+          <li><b>Practice</b> — instant feedback, no time pressure.</li>
+          <li><b>📝 Exam</b> — timed, graded at the end.</li>
+          <li><b>⚡ Flashcard</b> — quick flip-through review.</li>
+        </ul>
+        <p style="margin-top:.5rem">Shortcuts while answering: <b>A/B/C/D</b> or <b>1–5</b> to pick an option, <b>←/→</b> between cards, <b>Esc</b> to quit.</p>`
+    },
+    {
+      icon: '⭐',
+      title: 'Bookmarks, Flags & Wrong Bank',
+      body: `
+        <p>Tag any question while studying:</p>
+        <ul style="margin:0 0 0 1.1rem;padding:0">
+          <li><b>⭐ Bookmarks</b> — save with a label (Need Check, Interesting, Debating, Confusing, Formulae).</li>
+          <li><b>🚩 Flagged</b> — a quick "come back to this" marker.</li>
+          <li><b>❌ Wrong Bank</b> — anything you get wrong lands here automatically, and needs two correct answers in a row, spaced a few days apart, before it's considered mastered.</li>
+        </ul>`
+    },
+    {
+      icon: '📅',
+      title: 'Timetable & Progress',
+      body: `<p><b>Timetable</b> lets you block out study sessions by day/time — the Dashboard clock shows what's happening right now. <b>Progress</b> tracks your accuracy over time and predicts your likely exam marks from recent sessions.</p>`
+    },
+    {
+      icon: '📦',
+      title: 'Offline & installing the app',
+      body: `
+        <p>Chapters you open get cached automatically for offline use — check <b>Offline Cache</b> in the sidebar to manage what's stored on this device.</p>
+        <p style="margin-top:.5rem">Tap the <b>📲</b> icon in the top bar to install HAMRO AFNAI to your home screen — it then opens like a normal app, even with no signal. You can reopen this tutorial anytime from the sidebar or the Dashboard's Quick Actions.</p>`
+    }
+  ],
   _idx: 0,
-  maybeAutoOpen(user){ /* ... */ },
-  open(){ /* ... */ },
-  _go(dir){ /* ... */ },
-  _render(){ /* ... */ },
-  _finish(){ /* ... */ }
+
+  maybeAutoOpen(user) {
+    if (!user || !user.username) return;
+    const seen = _load(TUTORIAL._seenKey, {});
+    if (seen[user.username]) return;
+    setTimeout(() => TUTORIAL.open(), 600);
+  },
+
+  open() {
+    if (document.getElementById('tut-modal')) return;
+    TUTORIAL._idx = 0;
+    const modal = document.createElement('div');
+    modal.id = 'tut-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:10001;padding:1.2rem;backdrop-filter:blur(4px)';
+    modal.innerHTML = `
+      <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.4rem;max-width:420px;width:100%;box-shadow:var(--sh3);max-height:88vh;display:flex;flex-direction:column">
+        <div id="tut-dots" style="display:flex;gap:.3rem;margin-bottom:.9rem;justify-content:center"></div>
+        <div style="flex:1;overflow-y:auto;min-height:0" id="tut-body"></div>
+        <div style="display:flex;gap:.4rem;margin-top:1rem">
+          <button id="tut-back" style="padding:.6rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-size:.82rem;cursor:pointer;font-family:var(--ff)">← Back</button>
+          <button id="tut-next" style="flex:1;padding:.62rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r2);color:#0F0A00;font-weight:700;font-size:.85rem;cursor:pointer;font-family:var(--ff)">Next →</button>
+        </div>
+        <button id="tut-skip" style="margin-top:.55rem;background:none;border:none;color:var(--t3);font-size:.72rem;cursor:pointer;font-family:var(--ff);text-decoration:underline">Skip tutorial</button>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('tut-back').onclick = () => TUTORIAL._go(-1);
+    document.getElementById('tut-next').onclick = () => TUTORIAL._go(1);
+    document.getElementById('tut-skip').onclick = () => TUTORIAL._finish();
+    TUTORIAL._render();
+  },
+
+  _go(dir) {
+    const n = TUTORIAL._idx + dir;
+    if (n < 0) return;
+    if (n >= TUTORIAL._steps.length) { TUTORIAL._finish(); return; }
+    TUTORIAL._idx = n;
+    TUTORIAL._render();
+  },
+
+  _render() {
+    const step = TUTORIAL._steps[TUTORIAL._idx];
+    const body = document.getElementById('tut-body');
+    if (!body) return;
+    body.innerHTML = `
+      <div style="font-size:1.6rem;margin-bottom:.3rem">${step.icon}</div>
+      <div style="font-family:var(--fd);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:.5rem">${step.title}</div>
+      <div style="font-size:.82rem;color:var(--t2);line-height:1.55">${step.body}</div>`;
+    const dots = document.getElementById('tut-dots');
+    if (dots) {
+      dots.innerHTML = TUTORIAL._steps.map((_, i) =>
+        `<div style="width:${i === TUTORIAL._idx ? '18px' : '6px'};height:6px;border-radius:3px;background:${i === TUTORIAL._idx ? 'var(--amb)' : 'var(--b1)'};transition:.2s"></div>`
+      ).join('');
+    }
+    const backBtn = document.getElementById('tut-back');
+    if (backBtn) backBtn.style.visibility = TUTORIAL._idx === 0 ? 'hidden' : 'visible';
+    const nextBtn = document.getElementById('tut-next');
+    if (nextBtn) nextBtn.textContent = TUTORIAL._idx === TUTORIAL._steps.length - 1 ? "Got it — let's study! →" : 'Next →';
+  },
+
+  _finish() {
+    const modal = document.getElementById('tut-modal');
+    if (modal) modal.remove();
+    if (S.user && S.user.username) {
+      const seen = _load(TUTORIAL._seenKey, {});
+      seen[S.user.username] = true;
+      _save(TUTORIAL._seenKey, seen);
+    }
+  }
 };
 
 /* ═══════════════ 11. APP BOOT ═══════════════ */
