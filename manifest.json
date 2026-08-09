@@ -4,8 +4,8 @@
   "description": "Offline-first PSC & Engineering exam prep for Nepal",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#080B14",
-  "theme_color": "#080B14",
+  "background_color": "#FAFAFA",
+  "theme_color": "#FAFAFA",
   "orientation": "portrait-primary",
   "scope": "./",
   "icons": [

@@ -522,8 +522,11 @@ const UI = {
     document.getElementById('ov').classList.remove('show');
   },
   theme(){
-    document.body.classList.toggle('light');
-    _save('ha_theme', document.body.classList.contains('light')?'light':'dark');
+    // Default theme is now the light fintech design (no class needed —
+    // see :root in user.html). The original dark-navy theme is the
+    // opt-in, applied via body.dark.
+    document.body.classList.toggle('dark');
+    _save('ha_theme', document.body.classList.contains('dark')?'dark':'light');
   }
 };
 
@@ -2385,7 +2388,7 @@ const TUTORIAL = {
 /* ═══════════════ 11. APP BOOT ═══════════════ */
 const APP = {
   async init(){
-    if(_load('ha_theme','dark')==='light') document.body.classList.add('light');
+    if(_load('ha_theme','light')==='dark') document.body.classList.add('dark');
     const verEl = document.getElementById('sb-version');
     if(verEl) verEl.textContent = `HAMRO AFNAI v${APP_VERSION}`;
 
@@ -2484,7 +2487,7 @@ window.addEventListener('offline', ()=>{
 
 /* ── boot sequence ── */
 document.addEventListener('DOMContentLoaded', ()=>{
-  if(_load('ha_theme','dark')==='light') document.body.classList.add('light');
+  if(_load('ha_theme','light')==='dark') document.body.classList.add('dark');
   PWA.init();
   AUTH.restore();
   NETCHECK.start();
