@@ -1709,6 +1709,50 @@ const ONPROG = {
     ONPROG.filewiseOpen = !ONPROG.filewiseOpen;
     ONPROG.render();
   },
+  // Clears ONLY the Practised/Attempted/Correct/Wrong counts for one
+  // specific file (fid) — never bookmarks, flags, or the wrong-answer
+  // bank, and never anything on Google Drive (the question sets
+  // themselves). This edits S.prog.sessions in localStorage, which is
+  // the exact same data saveProgress() already syncs to the backend —
+  // so the next background sync (triggered automatically by _save())
+  // carries the reset to the cloud copy too, with no separate backend
+  // action needed.
+  _lastLeaves:[],
+  resetFile(fid){
+    if(!fid) return;
+    const ref = ONPROG._lastLeaves.find(l=>l.fid===fid);
+    const label = ref ? `${ref.book} — ${ref.subtopic}` : 'this file';
+    if(!confirm(`Reset practice progress for "${label}"?\n\nThis clears only the Practised/Attempted/Correct/Wrong counts for this one file. Bookmarks, flags, and your wrong-answer bank are not touched — and the question file itself is never modified.`)) return;
+    let removedTotal=0, removedCorrectTotal=0;
+    S.prog.sessions.forEach(s=>{
+      if(!s.qres || !s.qres.length) return;
+      const kept=[];
+      let removedHere=0, removedCorrectHere=0;
+      s.qres.forEach(q=>{
+        if(q && q.uid && fidFromUid(q.uid)===fid){
+          removedHere++;
+          if(q.ok) removedCorrectHere++;
+        } else kept.push(q);
+      });
+      if(removedHere){
+        s.qres = kept;
+        s.correct = Math.max(0,(s.correct||0)-removedCorrectHere);
+        s.wrong = Math.max(0,(s.wrong||0)-(removedHere-removedCorrectHere));
+        s.total = Math.max(0,(s.total||0)-removedHere);
+        removedTotal += removedHere;
+        removedCorrectTotal += removedCorrectHere;
+      }
+    });
+    // Drop sessions fully consumed by the reset so Recent Sessions
+    // doesn't show zeroed ghost entries.
+    S.prog.sessions = S.prog.sessions.filter(s=> (s.qres&&s.qres.length) || (s.total||0)>0);
+    S.prog.total = Math.max(0,(S.prog.total||0)-removedTotal);
+    S.prog.correct = Math.max(0,(S.prog.correct||0)-removedCorrectTotal);
+    _save(LS.PROG, S.prog);
+    toast(removedTotal ? `✅ Reset "${label}" — ${removedTotal} record(s) cleared` : `Nothing to reset for "${label}"`);
+    ONPROG.render();
+    if(typeof HOME!=='undefined' && HOME.render) HOME.render();
+  },
   _scope(){
     const lv = document.getElementById('on-lv')?.value || '';
     const ch = document.getElementById('on-ch')?.value || '';
@@ -1749,6 +1793,7 @@ const ONPROG = {
     titleEl.textContent = `📊 ${label}`;
 
     const leaves = scopeLeaves(lv,ch,book,sub);
+    ONPROG._lastLeaves = leaves;
     const scoped = scopedStats(leaves);
     const known = CNT.knownTotal(leaves);
 
@@ -1779,7 +1824,12 @@ const ONPROG = {
           const fPct = fTotal ? Math.min(100, Math.round((fVal/fTotal)*100)) : 0;
           const rowLabel = showBook ? `${ref.book} — ${ref.subtopic}` : ref.subtopic;
           return `<div class="pb-w fw-row">
-            <div class="pb-l"><span>${esc(rowLabel)}</span><span>${fVal} / ${fTotal!=null?fTotal:'?'}${fTotal!=null?` (${fPct}%)`:''}</span></div>
+            <div class="pb-l">
+              <span>${esc(rowLabel)}</span>
+              <span class="fw-row-right">${fVal} / ${fTotal!=null?fTotal:'?'}${fTotal!=null?` (${fPct}%)`:''}
+                <button class="fw-reset" title="Reset progress for this file" onclick="event.stopPropagation();ONPROG.resetFile('${ref.fid}')">🗑</button>
+              </span>
+            </div>
             <div class="pb"><div class="pb-f" style="width:${fTotal!=null?fPct:0}%;background:${barColor}"></div></div>
           </div>`;
         }).join('');
@@ -1799,7 +1849,10 @@ const ONPROG = {
         </div>
         ${info.needsConfirm ? confirmBtn : `
           <div class="pb-w" style="margin-top:.65rem">
-            <div class="pb-l"><span>${metricLabel} coverage (compiled)</span><span>${metricVal} / ${total||'?'} (${pct}%)</span></div>
+            <div class="pb-l">
+              <span>${metricLabel} coverage (compiled)</span>
+              <span>${metricVal} / ${total||'?'} (${pct}%)${fid ? ` <button class="fw-reset" title="Reset progress for this file" onclick="ONPROG.resetFile('${fid}')">🗑</button>` : ''}</span>
+            </div>
             <div class="pb"><div class="pb-f" style="width:${pct}%;background:${barColor}"></div></div>
           </div>`}
         ${unknownNote}
