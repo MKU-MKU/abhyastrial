@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════════
+   HAMRO AFNAI — Shared Design System
+   Linked by index.html, user.html, and admin.html. This file holds
+   ONLY the token layer (colors/type/spacing/radius/shadow) plus a
+   few true cross-page resets — each page keeps its own component
+   classes (tied to its own JS), but every one of them is built out
+   of these same tokens, so the three apps read as one product.
+
+   Design language: modern, minimal, premium fintech. White/off-white
+   surfaces, dark charcoal text, muted green accent, soft dividers,
+   very soft shadows, large rounded cards, outline icons.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root{
+  /* ── Color ── */
+  --c-primary:      #368B4F;   /* muted brand green — buttons, active states, links */
+  --c-primary-dark: #2C7541;   /* hover/active shade of primary */
+  --c-primary-light:#EEF3EF;   /* light green tint — selected rows, soft badges, icon chips */
+  --c-text:         #111315;   /* primary text — headings, row labels */
+  --c-text-soft:    #59605D;   /* secondary text — captions, helper copy */
+  --c-text-faint:   #8A9089;   /* tertiary text — placeholders, disabled */
+  --c-bg:           #FAFAFA;   /* page background */
+  --c-surface:      #FFFFFF;   /* card/panel surface */
+  --c-divider:      #E8EBE9;   /* hairline borders, separators */
+  --c-danger:       #C1433C;   /* muted red — errors, destructive actions */
+  --c-danger-bg:    #FBECEA;
+  --c-warning:      #B5790C;   /* muted amber — warnings, pending states */
+  --c-warning-bg:   #FBF3E3;
+  --c-success:      var(--c-primary);
+  --c-success-bg:   var(--c-primary-light);
+  --c-info:         #2B6CB0;
+  --c-info-bg:      #EAF1FA;
+
+  /* ── Typography ── */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  --fs-page-title: 1.5rem;      /* 24px — page headings */
+  --fs-section-title: 1.0625rem;/* 17px — card/section titles */
+  --fs-body: 0.9375rem;         /* 15px — primary row/body text */
+  --fs-label: 0.875rem;         /* 14px — secondary/section labels */
+  --fs-caption: 0.8125rem;      /* 13px — captions, helper text, metadata */
+  --fs-micro: 0.6875rem;        /* 11px — eyebrow labels, badges */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+
+  /* ── Spacing scale (4px base) ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ── Radius ── */
+  --r-sm: 10px;    /* inputs, chips, small buttons */
+  --r-md: 14px;    /* buttons, badges, list rows */
+  --r-lg: 20px;    /* standard cards */
+  --r-xl: 24px;    /* hero/large cards, modals */
+  --r-full: 999px; /* pills, avatars, toggles */
+
+  /* ── Shadow (extremely soft, per spec) ── */
+  --sh-xs: 0 1px 2px rgba(17,19,21,.04);
+  --sh-sm: 0 2px 8px rgba(17,19,21,.05);
+  --sh-md: 0 8px 24px rgba(17,19,21,.06);
+  --sh-lg: 0 16px 40px rgba(17,19,21,.08);
+  --sh-focus: 0 0 0 3px rgba(54,139,79,.16); /* focus ring, primary-tinted */
+
+  /* ── Motion ── */
+  --ease: .15s cubic-bezier(.4,0,.2,1);
+  --ease-spring: .22s cubic-bezier(.34,1.56,.64,1);
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* ── Cross-page resets ── */
+*,*::before,*::after{box-sizing:border-box}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* ── Shared focus-visible ring (accessibility: visible focus states) ── */
+:focus-visible{
+  outline:2px solid var(--c-primary);
+  outline-offset:2px;
+  border-radius:4px;
+}
+
+/* ── Shared scrollbar treatment ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--c-divider);border-radius:var(--r-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--c-text-faint)}
