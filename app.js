@@ -1652,29 +1652,61 @@ const CNT = {
   }
 };
 
-function scopedStats(lv,ch,book,sub){
-  const uids=new Set();
-  let attempted=0, correct=0, wrong=0;
+// uid format is always `${fid}_${index}` (see normQ). Google Drive fileIds
+// can themselves contain underscores, so we split on the LAST underscore —
+// everything before it is the source file id, everything after is the
+// in-file index (always a plain number, never has an underscore).
+function fidFromUid(uid){
+  const i = uid.lastIndexOf('_');
+  return i > -1 ? uid.slice(0,i) : uid;
+}
+
+// Per-file (fid) practise stats, built from every recorded session's qres —
+// regardless of *how* that session was started (Online Study, Psycho Mode,
+// Daily Challenge, Adaptive Practice, Wrong Bank retry, Bookmarks review,
+// etc). Session-level lv/ch/book/sub tags are only ever set by Online Study,
+// so filtering on them (the old approach) silently dropped every other
+// mode's practice from the scoped progress card. Matching by the file id
+// embedded in each answered question's uid instead means it doesn't matter
+// which screen the user practised from — it always counts.
+function fileStatsMap(leaves){
+  const map = new Map();
+  leaves.forEach(ref=>{ if(!map.has(ref.fid)) map.set(ref.fid, {practised:new Set(), attempted:0, correct:0, wrong:0}); });
   S.prog.sessions.forEach(s=>{
-    if(!s.lv) return;
-    if(lv && s.lv!==lv) return;
-    if(ch && s.ch!==ch) return;
-    if(book && s.book!==book) return;
-    if(sub && s.sub!==sub) return;
-    correct += s.correct||0;
-    wrong += s.wrong||0;
-    attempted += (s.correct||0)+(s.wrong||0);
-    (s.qres||[]).forEach(q=>{ if(q&&q.uid) uids.add(q.uid); });
+    (s.qres||[]).forEach(q=>{
+      if(!q || !q.uid) return;
+      const rec = map.get(fidFromUid(q.uid));
+      if(!rec) return;
+      rec.practised.add(q.uid);
+      rec.attempted++;
+      if(q.ok) rec.correct++; else rec.wrong++;
+    });
   });
-  return {practised:uids.size, attempted, correct, wrong};
+  return map;
+}
+
+function scopedStats(leaves){
+  const fileMap = fileStatsMap(leaves);
+  const uids = new Set();
+  let attempted=0, correct=0, wrong=0;
+  fileMap.forEach(rec=>{
+    rec.practised.forEach(u=>uids.add(u));
+    attempted += rec.attempted; correct += rec.correct; wrong += rec.wrong;
+  });
+  return {practised:uids.size, attempted, correct, wrong, fileMap};
 }
 
 const ONPROG = {
   metric:'practised',
+  filewiseOpen:false,
   _seq:0,
   setMetric(m){
     ONPROG.metric = m;
     document.querySelectorAll('#on-prog-tabs .mtab').forEach(b=>b.classList.toggle('active', b.dataset.m===m));
+    ONPROG.render();
+  },
+  toggleFilewise(){
+    ONPROG.filewiseOpen = !ONPROG.filewiseOpen;
     ONPROG.render();
   },
   _scope(){
@@ -1716,8 +1748,8 @@ const ONPROG = {
       : lvLabel;
     titleEl.textContent = `📊 ${label}`;
 
-    const scoped = scopedStats(lv,ch,book,sub);
     const leaves = scopeLeaves(lv,ch,book,sub);
+    const scoped = scopedStats(leaves);
     const known = CNT.knownTotal(leaves);
 
     const paint = (info)=>{
@@ -1730,6 +1762,34 @@ const ONPROG = {
       const pct = total ? Math.min(100, Math.round((metricVal/total)*100)) : 0;
       const unknownNote = info.unknown ? `<div style="font-size:.66rem;color:var(--t3);margin-top:.45rem">⚠️ ${info.unknown} of ${info.files} file${info.files>1?'s':''} not counted yet (offline, or not cached)</div>` : '';
       const confirmBtn = info.needsConfirm ? `<button class="btn btn-sm btn-a" style="margin-top:.5rem" onclick="ONPROG.render(true)">🔢 Count questions (${info.files} files)</button>` : '';
+
+      // ── Filewise breakdown — one row per subtopic/file in the current
+      // scope, shown alongside the compiled (aggregate) numbers above.
+      // Skipped when there's only one file (nothing to break down) or the
+      // scope is too wide (100+ files — narrow the selection instead of
+      // dumping a huge list).
+      let filewiseHtml = '';
+      if(leaves.length>1 && leaves.length<=100){
+        const showBook = !book; // book not yet chosen -> leaves span multiple books, show book too
+        const rows = leaves.map(ref=>{
+          const rec = scoped.fileMap.get(ref.fid) || {practised:new Set(),attempted:0,correct:0,wrong:0};
+          const fVals = {practised:rec.practised.size, attempted:rec.attempted, correct:rec.correct, wrong:rec.wrong};
+          const fVal = fVals[ONPROG.metric];
+          const fTotal = S.fcount[ref.fid];
+          const fPct = fTotal ? Math.min(100, Math.round((fVal/fTotal)*100)) : 0;
+          const rowLabel = showBook ? `${ref.book} — ${ref.subtopic}` : ref.subtopic;
+          return `<div class="pb-w fw-row">
+            <div class="pb-l"><span>${esc(rowLabel)}</span><span>${fVal} / ${fTotal!=null?fTotal:'?'}${fTotal!=null?` (${fPct}%)`:''}</span></div>
+            <div class="pb"><div class="pb-f" style="width:${fTotal!=null?fPct:0}%;background:${barColor}"></div></div>
+          </div>`;
+        }).join('');
+        filewiseHtml = `
+          <div class="fw-toggle" onclick="ONPROG.toggleFilewise()">
+            <span>${ONPROG.filewiseOpen?'▾':'▸'}</span> 📁 Filewise breakdown (${leaves.length} files)
+          </div>
+          <div id="on-fw-list" style="display:${ONPROG.filewiseOpen?'block':'none'}">${rows}</div>`;
+      }
+
       bodyEl.innerHTML = `
         <div class="prog-grid">
           <div class="sc"><div class="sv tcy">${scoped.practised}</div><div class="sl">Practised</div></div>
@@ -1739,10 +1799,11 @@ const ONPROG = {
         </div>
         ${info.needsConfirm ? confirmBtn : `
           <div class="pb-w" style="margin-top:.65rem">
-            <div class="pb-l"><span>${metricLabel} coverage</span><span>${metricVal} / ${total||'?'} (${pct}%)</span></div>
+            <div class="pb-l"><span>${metricLabel} coverage (compiled)</span><span>${metricVal} / ${total||'?'} (${pct}%)</span></div>
             <div class="pb"><div class="pb-f" style="width:${pct}%;background:${barColor}"></div></div>
           </div>`}
         ${unknownNote}
+        ${info.needsConfirm ? '' : filewiseHtml}
       `;
     };
 
