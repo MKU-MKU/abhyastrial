@@ -1,4 +1,4 @@
-# HAMRO AFNAI — Smart Study Hub
+# Abhyas — Your path to mastery
 
 **Offline-first exam prep platform for Nepal Engineering (Level 5 / Level 7) and PSC / Loksewa exams.**
 
@@ -12,7 +12,7 @@ Built as three standalone static HTML pages backed by a single Google Apps Scrip
 
 ## 1. What this app actually does
 
-HAMRO AFNAI is a study app for students preparing for:
+Abhyas is a study app for students preparing for:
 - **Level 5 / Level 7 Engineering** licensing exams
 - **PSC / Loksewa** (Nepal Public Service Commission) exams
 - General Knowledge (GK) and old-question archives

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   SW.JS — HAMRO AFNAI  Service Worker
+   SW.JS — Abhyas  Service Worker
    Strategy:
    • Admin panel      → NEVER intercepted. Always live network.
    • index.html/shell → network-first, cache-bypass (no-store) so a

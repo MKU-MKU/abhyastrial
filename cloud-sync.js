@@ -1,4 +1,4 @@
-/* cloud-sync.js — HAMRO AFNAI Cloud Sync Module
+/* cloud-sync.js — Abhyas Cloud Sync Module
    Provides:
      - CLOUD.backup()       full progress backup to Google Drive
      - CLOUD.restore()      restore from cloud
