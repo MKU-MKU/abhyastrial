@@ -1,6 +1,6 @@
 {
-  "name": "HAMRO AFNAI Smart Study Hub",
-  "short_name": "HAMRO AFNAI",
+  "name": "Abhyas — Your path to mastery",
+  "short_name": "Abhyas",
   "description": "Offline-first PSC & Engineering exam prep for Nepal",
   "start_url": "./index.html",
   "display": "standalone",

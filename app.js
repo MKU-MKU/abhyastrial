@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   APP.JS — HAMRO AFNAI Smart Study Hub  (v10.1 – Cloud Sync)
+   APP.JS — Abhyas: Your path to mastery  (v10.1 – Cloud Sync)
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════ 1. CONFIG & CONSTANTS ═══════════════ */
@@ -2207,7 +2207,7 @@ const DATA = {
   exp(){
     const payload = { prog:S.prog, bk:S.bk, fl:S.fl, wr:S.wr, tt:S.tt, stk:S.stk, exportedAt:new Date().toISOString() };
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hamro-afnai-backup.json';a.click();
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='abhyas-backup.json';a.click();
     toast('📤 Exported');
   },
   imp(){
@@ -2252,7 +2252,7 @@ const TUTORIAL = {
   _steps: [
     {
       icon: '👋',
-      title: 'Welcome to HAMRO AFNAI',
+      title: 'Welcome to Abhyas',
       body: `<p>This is your Smart Study Hub for Nepal Engineering (Level 5/7) and PSC/Loksewa prep. Once a chapter is cached it works fully offline — handy for load-shedding or weak signal.</p>`
     },
     {
@@ -2311,7 +2311,7 @@ const TUTORIAL = {
       title: 'Offline & installing the app',
       body: `
         <p>Chapters you open get cached automatically for offline use — check <b>Offline Cache</b> in the sidebar to manage what's stored on this device.</p>
-        <p style="margin-top:.5rem">Tap the <b>📲</b> icon in the top bar to install HAMRO AFNAI to your home screen — it then opens like a normal app, even with no signal. You can reopen this tutorial anytime from the sidebar or the Dashboard's Quick Actions.</p>`
+        <p style="margin-top:.5rem">Tap the <b>📲</b> icon in the top bar to install Abhyas to your home screen — it then opens like a normal app, even with no signal. You can reopen this tutorial anytime from the sidebar or the Dashboard's Quick Actions.</p>`
     }
   ],
   _idx: 0,
@@ -2390,7 +2390,7 @@ const APP = {
   async init(){
     if(_load('ha_theme','light')==='dark') document.body.classList.add('dark');
     const verEl = document.getElementById('sb-version');
-    if(verEl) verEl.textContent = `HAMRO AFNAI v${APP_VERSION}`;
+    if(verEl) verEl.textContent = `Abhyas v${APP_VERSION}`;
 
     await QDB.migrateFromLocalStorage();
     // Migrate old session scopes (function in cloud-sync.js)
