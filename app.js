@@ -23,42 +23,6 @@ const LS = {
   PROFILE:'abhyas_profile'          // stores S.profile (including id)
 };
 
-// ── One-time migration: HAMRO AFNAI (ha_/hau_ prefixed) -> Abhyas
-// (abhyas_ prefixed) storage keys. Runs once, before anything below
-// reads from LS.*. Copies forward (never deletes) so a user who opens
-// the app after this update ships keeps their session, progress,
-// theme, bookmarks, etc. exactly as they were -- this is purely a key
-// *rename*, not a reset. Same migration also runs in index.html and
-// admin.html's own scripts, since they read/write 'hau_session' and
-// 'hau_admin' directly and don't load this file.
-(function migrateOldStorageKeys_(){
-  try{
-    const map = {
-      hau_session:'abhyas_session', hau_admin:'abhyas_admin',
-      ha_prog:'abhyas_prog', ha_bk:'abhyas_bk', ha_fl:'abhyas_fl', ha_wr:'abhyas_wr',
-      ha_tt:'abhyas_tt', ha_stk:'abhyas_stk', ha_forced_off:'abhyas_forced_off',
-      ha_exam_snap:'abhyas_exam_snap', ha_fcount:'abhyas_fcount', ha_cloud:'abhyas_cloud',
-      ha_profile:'abhyas_profile', ha_theme:'abhyas_theme', ha_tut_seen:'abhyas_tut_seen'
-    };
-    Object.keys(map).forEach(oldK=>{
-      const newK = map[oldK];
-      if(localStorage.getItem(newK)===null && localStorage.getItem(oldK)!==null){
-        localStorage.setItem(newK, localStorage.getItem(oldK));
-      }
-    });
-    // Per-file question-count cache keys: ha_qc_<fileId> -> abhyas_qc_<fileId>
-    const toCopy=[];
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(k && k.indexOf('ha_qc_')===0){
-        const nk = 'abhyas_qc_'+k.slice(6);
-        if(localStorage.getItem(nk)===null) toCopy.push([nk, localStorage.getItem(k)]);
-      }
-    }
-    toCopy.forEach(([nk,v])=>localStorage.setItem(nk,v));
-  }catch(e){ console.warn('Storage key migration skipped:', e); }
-})();
-
 const APP_VERSION = '1.0';
 const APP_NAME = 'Abhyas V1';
 

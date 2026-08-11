@@ -478,29 +478,6 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 // ═══════════════════════════════════════════════════════════════
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9SdKwrfKNfjgDd-J0nYjYAhsU1d2PP2JfyMI30ol9AGSatyg/exec";
 
-// ── One-time migration: HAMRO AFNAI (hau_/ha_ prefixed) -> Abhyas
-// (abhyas_ prefixed) storage keys. Copies forward, never deletes, so
-// an already-logged-in admin stays logged in across this rename.
-// Mirrored in index.html and app.js (user.html) for the keys each of
-// them reads/writes directly.
-(function migrateOldStorageKeys_(){
-  try{
-    const map = {
-      hau_session:'abhyas_session', hau_admin:'abhyas_admin',
-      ha_prog:'abhyas_prog', ha_bk:'abhyas_bk', ha_fl:'abhyas_fl', ha_wr:'abhyas_wr',
-      ha_tt:'abhyas_tt', ha_stk:'abhyas_stk', ha_forced_off:'abhyas_forced_off',
-      ha_exam_snap:'abhyas_exam_snap', ha_fcount:'abhyas_fcount', ha_cloud:'abhyas_cloud',
-      ha_profile:'abhyas_profile', ha_theme:'abhyas_theme', ha_tut_seen:'abhyas_tut_seen'
-    };
-    Object.keys(map).forEach(oldK=>{
-      const newK = map[oldK];
-      if(localStorage.getItem(newK)===null && localStorage.getItem(oldK)!==null){
-        localStorage.setItem(newK, localStorage.getItem(oldK));
-      }
-    });
-  }catch(e){ console.warn('Storage key migration skipped:', e); }
-})();
-
 // ═══════════════════════════════════════════════════════════════
 // ADMIN CORE
 // ═══════════════════════════════════════════════════════════════
