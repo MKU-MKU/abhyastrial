@@ -68,7 +68,7 @@ const CLOUD = {
         acc: S.prog.acc,
         sessions: S.prog.sessions.slice(-2000)   // keep last 2000 sessions
       });
-      const fname = 'hamroafnai-backup-' + S.profile.id + '.json';
+      const fname = 'abhyas-backup-' + S.profile.id + '.json';
       let fid = S.cloud.fid;
       if (!fid) fid = await CLOUD._findOrCreate(fname);
       const resp = await fetch(
@@ -102,7 +102,7 @@ const CLOUD = {
       return false;
     }
     try {
-      const fname = 'hamroafnai-backup-' + S.profile.id + '.json';
+      const fname = 'abhyas-backup-' + S.profile.id + '.json';
       const fid = await CLOUD._findOrCreate(fname);
       const resp = await fetch(
         'https://www.googleapis.com/drive/v3/files/' + fid + '?alt=media',

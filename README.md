@@ -4,7 +4,7 @@
 
 Built as three standalone static HTML pages backed by a single Google Apps Script + Google Sheets backend. There is no build step, no bundler, no server framework — you can literally open `index.html` in a browser and it works, once the backend URL is wired in.
 
-- **Version:** 10.0 (`APP_VERSION` in `app.js` and `CODE.GS`)
+- **Version:** Abhyas V1 (`APP_VERSION` = 1.0 in `app.js` and `CODE.GS`)
 - **Stack:** Vanilla HTML / CSS / JS on the frontend, Google Apps Script + Google Sheets + Google Drive on the backend
 - **Distribution:** Installable PWA (Progressive Web App) with offline caching
 
@@ -32,8 +32,8 @@ An admin panel lets a site operator manage users, review/approve payments, and e
 └──────┬──────┘        └──────┬───────┘        └──────┬───────┘
        │                      │                        │
        │ writes               │ loads                  │ own login
-       │ localStorage         │ chapters-data.js        │ ('hau_admin')
-       │ 'hau_session'        │ then app.js             │
+       │ localStorage         │ chapters-data.js        │ ('abhyas_admin')
+       │ 'abhyas_session'     │ then app.js             │
        │                      │                          │
        └──────────────────────┴────────────┬─────────────┘
                                             │  HTTP GET/POST
@@ -60,7 +60,7 @@ An admin panel lets a site operator manage users, review/approve payments, and e
    - `index.html` → `const GAS_URL = "..."`
    - `admin.html` → `const GAS_URL = "..."`
    - `app.js` → `APP_CONFIG.APPS_URL`
-2. **The `hau_session` localStorage key** — written only by `index.html` after a successful login/signup, and read by `app.js` on `user.html` to decide whether the visitor is allowed in. `admin.html` does **not** use this key; it has a completely separate login (`hau_admin`).
+2. **The `abhyas_session` localStorage key** — written only by `index.html` after a successful login/signup, and read by `app.js` on `user.html` to decide whether the visitor is allowed in. `admin.html` does **not** use this key; it has a completely separate login (`abhyas_admin`).
 
 There is no traditional database — **Google Sheets is the database** (Users, Payments, Settings, Logs, Admins, Progress tabs), and **Google Drive hosts the actual question content** as JSON files, referenced by file ID.
 
@@ -84,11 +84,11 @@ There is no traditional database — **Google Sheets is the database** (Users, P
 
 | File | Role |
 |---|---|
-| **`index.html`** | **Gateway.** Signup, login, the 24-hour trial countdown, the payment flow (QR + TXN ID + screenshot), and routing into `user.html` or `admin.html`. Owns the `hau_session` schema — it's the only file that writes it. Talks directly to `CODE.GS`; loads no other local JS file. |
+| **`index.html`** | **Gateway.** Signup, login, the 24-hour trial countdown, the payment flow (QR + TXN ID + screenshot), and routing into `user.html` or `admin.html`. Owns the `abhyas_session` schema — it's the only file that writes it. Talks directly to `CODE.GS`; loads no other local JS file. |
 | **`user.html`** | **The study app shell.** All HTML structure and CSS for every in-app view: home dashboard, quiz/exam screens, bookmarks, timetable, offline cache manager, settings, etc. Loads `chapters-data.js`, then `app.js`, then a small inline `<script>` "patch layer" at the bottom that wires up search links, swipe gestures, bottom-nav behavior, and the PWA install button. |
 | **`app.js`** | **All application logic.** ~2,400+ lines covering: session gating, the quiz engine (flashcard mode + timed exam mode), bookmarks/flags/wrong-answer bank, progress tracking, streaks, the timetable, the offline cache manager, data export/import, and PWA registration. This is the file you touch for almost any feature change. Reads its data model from `chapters-data.js` and talks to `CODE.GS` for `checkSession` and `getFile` (question-set downloads). |
 | **`chapters-data.js`** | **Pure content data** — no logic. Maps `Level → Chapter → Book → Subtopic → Google Drive file ID`, four levels deep. This is the only file you edit to add, rename, or remove chapters, books, or question sets. Has a large instructional comment block at the top for exactly how to do that. |
-| **`admin.html`** | **Admin panel.** List/search users, approve or reject pending payments, edit global settings (payment amount, QR image, contact info, instructions), view usage stats, manage admin accounts, view an audit log, and change the admin password. Fully self-contained with its own login gate (`hau_admin`), independent of `index.html`'s session. Talks directly to `CODE.GS`. |
+| **`admin.html`** | **Admin panel.** List/search users, approve or reject pending payments, edit global settings (payment amount, QR image, contact info, instructions), view usage stats, manage admin accounts, view an audit log, and change the admin password. Fully self-contained with its own login gate (`abhyas_admin`), independent of `index.html`'s session. Talks directly to `CODE.GS`. |
 | **`CODE.GS`** | **Backend — Google Apps Script.** A single script handling every `?action=...` request from all three pages: authentication, signup, session checks, progress sync, payment submission/review, settings, question-file proxying, and the full admin action set. Manages Google Sheets (`Users`, `Payments`, `Settings`, `Logs`, `Admins`, `Progress`) and reads/writes Google Drive for question files and payment screenshots. |
 | **`manifest.json`** | **PWA manifest** — app name, icons, theme colors, start URL, display mode. Lets the app be "installed" to a phone or desktop home screen. Referenced from `user.html`'s `<link rel="manifest">`. |
 | **`sw.js`** | **Service worker.** Caches the app shell for offline use (stale-while-revalidate) and Drive/API responses (network-first with an offline fallback). Registered by `PWA.init()` in `app.js`. It does **not** currently handle push or local notifications — see [Known gaps](#7-known-gaps--roadmap). |
@@ -123,7 +123,7 @@ There is no traditional database — **Google Sheets is the database** (Users, P
 | `APP_CONFIG` / `LS` / `S` | Backend URL config, localStorage key names, and the in-memory app state object |
 | `QDB` | IndexedDB-backed cache for downloaded question sets (chosen over localStorage because localStorage is capped around 5–10 MB per origin, easy to exceed once a student caches a large content library) |
 | `NETCHECK` | Lightweight connectivity probing (separate from the browser's `navigator.onLine`, which can be unreliable) |
-| `AUTH` | Session gate — validates `hau_session` against the backend, builds the effective access level (`trial` / `permanent` / `expired` / `pending_review` / `unknown`) |
+| `AUTH` | Session gate — validates `abhyas_session` against the backend, builds the effective access level (`trial` / `permanent` / `expired` / `pending_review` / `unknown`) |
 | `PSYNC` | Background sync of local data (progress, bookmarks, streaks) back to the server |
 | `PWA` | Service worker registration and install-prompt handling |
 | `UI` | Core view-routing / navigation (`_goRaw()` switches between top-level views) |
@@ -242,7 +242,7 @@ The backend is a **single Google Apps Script Web App** exposing everything throu
 ## 9. Things that must stay in sync across files
 
 - **`GAS_URL` / `APP_CONFIG.APPS_URL`** — must be identical in `index.html`, `admin.html`, and `app.js`. If you redeploy the Apps Script and get a new URL, update all three.
-- **`hau_session` shape** — `index.html` writes `{ type, username, name, email, mobile, token, access:{level, trialExpiresAt, permanent}, settings, lastVerified }`. `app.js`'s `AUTH` module reads/writes this exact shape — change one side, change the other.
+- **`abhyas_session` shape** — `index.html` writes `{ type, username, name, email, mobile, token, access:{level, trialExpiresAt, permanent}, settings, lastVerified }`. `app.js`'s `AUTH` module reads/writes this exact shape — change one side, change the other.
 - **Access-level rules** (`permanent` / `trial` / `expired` / `pending_review` / `unknown`) — computed independently in `index.html`'s `handleUserAuth()` and `app.js`'s `AUTH._buildSession()`. They must be kept logically identical.
 - **Offline cache keys** — built as `` `${level}_${chapter}_${book}_${subtopic}` `` in one place (`ChapterData.chapterFileRefs()` / `allFileRefs()`) and consumed consistently by `ON`, `PSY`, `CACHE`, and `QUIZ.daily()`. A set cached from one screen must appear as cached everywhere else.
 - **Global settings** (payment amount / QR / contact / instructions) — written by `admin.html` via `adminUpdateSettingsBatch`, read by `index.html` via `getSettings`. `index.html`'s `loadPaymentUI()` re-fetches live settings every time it's online — don't reintroduce a "skip fetch if already cached" shortcut, or admin changes will stop reaching users with a stale cached copy.
