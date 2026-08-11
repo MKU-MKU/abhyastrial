@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   HAMRO AFNAI v10 — Complete Google Apps Script Backend
+   Abhyas V1 — Complete Google Apps Script Backend
    Flow: Signup → Auto-Trial (24h) → Payment → Admin Verify → Permanent
    Admin login shares endpoint, opens separate admin world.
    Offline-first: Once paid, access never removed.
@@ -10,7 +10,7 @@
    conversation can start with "what version are you on" instead of
    guessing from symptoms. Surfaced via the `ping` action; mirrored in
    app.js/index.html/user.html/admin.html/sw.js so every surface agrees. */
-const APP_VERSION = "10.0";
+const APP_VERSION = "1.0";
 
 /* ── ADMIN CREDENTIALS ───────────────────────────────────────────
    Admins now live in their own sheet (see getAdminsSheet_ / ADMIN_HEADERS
@@ -231,7 +231,7 @@ function getSpreadsheet_() {
     }
   }
   if (!spreadsheet) {
-    spreadsheet = SpreadsheetApp.create("HAMRO AFNAI v10");
+    spreadsheet = SpreadsheetApp.create("Abhyas V1");
     PropertiesService.getScriptProperties().setProperty("SHEET_ID", spreadsheet.getId());
   }
   return spreadsheet;
@@ -482,7 +482,7 @@ function initDefaultSettings_() {
     ["paymentAmount", "100"],
     ["paymentInstructions", "Scan the QR code and submit your transaction ID for verification."],
     ["trialHours", "24"],
-    ["appName", "HAMRO AFNAI"]
+    ["appName", "Abhyas"]
   ];
 
   defaults.forEach(([key, value]) => {
@@ -1720,7 +1720,7 @@ function fixSheetFormatting() {
 
 function testAll() {
   console.log("═══════════════════════════════════════════════════════");
-  console.log("  HAMRO AFNAI v10 — FULL SYSTEM TEST");
+  console.log("  Abhyas V1 — FULL SYSTEM TEST");
   console.log("═══════════════════════════════════════════════════════");
 
   // 1. Setup

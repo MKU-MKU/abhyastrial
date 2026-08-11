@@ -27,7 +27,7 @@
 /* 👇 Bump this name whenever you update any shell file (index.html,
    user.html, app.js, chapters-data.js, manifest.json). All previous
    caches will be deleted immediately on activation. */
-const CACHE_NAME = 'ha-shell-v1';   // fresh start – old caches wiped
+const CACHE_NAME = 'abhyas-shell-v1';   // Abhyas V1 rebrand — old cache auto-wiped on activate, safe (static assets only, no user data)
 
 const SHELL = [
   './',

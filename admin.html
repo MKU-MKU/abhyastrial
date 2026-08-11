@@ -251,13 +251,13 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
     <div class="gate-logo">
       <div class="icon"><img src="icon-192.png" alt="Abhyas"></div>
       <h1>Admin World</h1>
-      <p>Abhyas v10 Management</p>
+      <p>Abhyas V1 Management</p>
     </div>
     <div class="err" id="err" role="alert" aria-live="assertive"></div>
     <div class="fld"><label for="ad-user">Admin Username</label><input type="text" id="ad-user" placeholder="admin" autocomplete="username" autocapitalize="none"></div>
     <div class="fld"><label for="ad-pass">Password</label><input type="password" id="ad-pass" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn" id="btn-login" onclick="ADMIN.login()">Enter Admin Panel →</button>
-    <div class="link-row"><a onclick="localStorage.removeItem('hau_admin'); localStorage.removeItem('hau_session'); location.href='index.html'">← Back to User Login</a></div>
+    <div class="link-row"><a onclick="localStorage.removeItem('abhyas_admin'); localStorage.removeItem('abhyas_session'); location.href='index.html'">← Back to User Login</a></div>
   </div>
 </div>
 
@@ -297,8 +297,8 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
       <div class="sb-item" id="nav-logs" onclick="UI.nav('logs')"><div class="sb-ic">📋</div>Activity Logs</div>
       <div class="sb-item" id="nav-settings" onclick="UI.nav('settings')"><div class="sb-ic">⚙️</div>Settings</div>
       <div class="sb-div"></div>
-      <div class="sb-item" onclick="localStorage.removeItem('hau_admin'); localStorage.removeItem('hau_session'); location.href='index.html'"><div class="sb-ic">🏠</div>User Portal</div>
-      <div style="text-align:center;font-size:.62rem;color:var(--t3);opacity:.6;padding:.6rem 0 .2rem">Abhyas v10.0</div>
+      <div class="sb-item" onclick="localStorage.removeItem('abhyas_admin'); localStorage.removeItem('abhyas_session'); location.href='index.html'"><div class="sb-ic">🏠</div>User Portal</div>
+      <div style="text-align:center;font-size:.62rem;color:var(--t3);opacity:.6;padding:.6rem 0 .2rem">Abhyas V1</div>
     </div>
 
     <div id="main">
@@ -478,6 +478,29 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 // ═══════════════════════════════════════════════════════════════
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9SdKwrfKNfjgDd-J0nYjYAhsU1d2PP2JfyMI30ol9AGSatyg/exec";
 
+// ── One-time migration: HAMRO AFNAI (hau_/ha_ prefixed) -> Abhyas
+// (abhyas_ prefixed) storage keys. Copies forward, never deletes, so
+// an already-logged-in admin stays logged in across this rename.
+// Mirrored in index.html and app.js (user.html) for the keys each of
+// them reads/writes directly.
+(function migrateOldStorageKeys_(){
+  try{
+    const map = {
+      hau_session:'abhyas_session', hau_admin:'abhyas_admin',
+      ha_prog:'abhyas_prog', ha_bk:'abhyas_bk', ha_fl:'abhyas_fl', ha_wr:'abhyas_wr',
+      ha_tt:'abhyas_tt', ha_stk:'abhyas_stk', ha_forced_off:'abhyas_forced_off',
+      ha_exam_snap:'abhyas_exam_snap', ha_fcount:'abhyas_fcount', ha_cloud:'abhyas_cloud',
+      ha_profile:'abhyas_profile', ha_theme:'abhyas_theme', ha_tut_seen:'abhyas_tut_seen'
+    };
+    Object.keys(map).forEach(oldK=>{
+      const newK = map[oldK];
+      if(localStorage.getItem(newK)===null && localStorage.getItem(oldK)!==null){
+        localStorage.setItem(newK, localStorage.getItem(oldK));
+      }
+    });
+  }catch(e){ console.warn('Storage key migration skipped:', e); }
+})();
+
 // ═══════════════════════════════════════════════════════════════
 // ADMIN CORE
 // ═══════════════════════════════════════════════════════════════
@@ -489,13 +512,13 @@ const ADMIN = {
   state: {uPage:1, pPage:1, lPage:1, uPerPage:15, pPerPage:15, lPerPage:20},
 
   init() {
-    const saved = localStorage.getItem('hau_admin');
+    const saved = localStorage.getItem('abhyas_admin');
     if (saved) {
       try {
         this.creds = JSON.parse(saved);
         this.unlock();
         return;
-      } catch(e) { localStorage.removeItem('hau_admin'); }
+      } catch(e) { localStorage.removeItem('abhyas_admin'); }
     }
   },
 
@@ -509,7 +532,7 @@ const ADMIN = {
       const res = await this.post('adminLogin', {username:u, password:p});
       if (!res.success) throw new Error(res.error || 'Invalid credentials');
       this.creds = {user: u, token: res.adminToken, expires: Date.now() + 86400000};
-      localStorage.setItem('hau_admin', JSON.stringify(this.creds));
+      localStorage.setItem('abhyas_admin', JSON.stringify(this.creds));
       this.unlock();
       this.toast('✅ Welcome to Admin World');
     } catch(e) { this.showErr(e.message || 'Login failed. Check connection.'); }
@@ -524,8 +547,8 @@ const ADMIN = {
   },
 
   logout() {
-    localStorage.removeItem('hau_admin');
-    localStorage.removeItem('hau_session');
+    localStorage.removeItem('abhyas_admin');
+    localStorage.removeItem('abhyas_session');
     location.href = 'index.html';
   },
 

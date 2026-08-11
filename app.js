@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   APP.JS — Abhyas: Your path to mastery  (v10.1 – Cloud Sync)
+   APP.JS — Abhyas: Your path to mastery  (V1 – Cloud Sync)
    ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════ 1. CONFIG & CONSTANTS ═══════════════ */
@@ -13,17 +13,54 @@ const BK_TAGS = ['Need Check','Interesting','Debating','Confusing','Formulae'];
 const SR_INTERVALS = [1, 3, 7, 14]; // days for spaced repetition
 
 const LS = {
-  USER:'hau_session',
-  PROG:'ha_prog', BK:'ha_bk', FL:'ha_fl', WR:'ha_wr',
-  QC:'ha_qc_', TT:'ha_tt', STK:'ha_stk',
-  FORCED_OFFLINE:'ha_forced_off',
-  EXAM_SNAP:'ha_exam_snap',
-  FCOUNT:'ha_fcount',
-  CLOUD:'ha_cloud',
-  PROFILE:'ha_profile'          // stores S.profile (including id)
+  USER:'abhyas_session',
+  PROG:'abhyas_prog', BK:'abhyas_bk', FL:'abhyas_fl', WR:'abhyas_wr',
+  QC:'abhyas_qc_', TT:'abhyas_tt', STK:'abhyas_stk',
+  FORCED_OFFLINE:'abhyas_forced_off',
+  EXAM_SNAP:'abhyas_exam_snap',
+  FCOUNT:'abhyas_fcount',
+  CLOUD:'abhyas_cloud',
+  PROFILE:'abhyas_profile'          // stores S.profile (including id)
 };
 
-const APP_VERSION = '10.1';
+// ── One-time migration: HAMRO AFNAI (ha_/hau_ prefixed) -> Abhyas
+// (abhyas_ prefixed) storage keys. Runs once, before anything below
+// reads from LS.*. Copies forward (never deletes) so a user who opens
+// the app after this update ships keeps their session, progress,
+// theme, bookmarks, etc. exactly as they were -- this is purely a key
+// *rename*, not a reset. Same migration also runs in index.html and
+// admin.html's own scripts, since they read/write 'hau_session' and
+// 'hau_admin' directly and don't load this file.
+(function migrateOldStorageKeys_(){
+  try{
+    const map = {
+      hau_session:'abhyas_session', hau_admin:'abhyas_admin',
+      ha_prog:'abhyas_prog', ha_bk:'abhyas_bk', ha_fl:'abhyas_fl', ha_wr:'abhyas_wr',
+      ha_tt:'abhyas_tt', ha_stk:'abhyas_stk', ha_forced_off:'abhyas_forced_off',
+      ha_exam_snap:'abhyas_exam_snap', ha_fcount:'abhyas_fcount', ha_cloud:'abhyas_cloud',
+      ha_profile:'abhyas_profile', ha_theme:'abhyas_theme', ha_tut_seen:'abhyas_tut_seen'
+    };
+    Object.keys(map).forEach(oldK=>{
+      const newK = map[oldK];
+      if(localStorage.getItem(newK)===null && localStorage.getItem(oldK)!==null){
+        localStorage.setItem(newK, localStorage.getItem(oldK));
+      }
+    });
+    // Per-file question-count cache keys: ha_qc_<fileId> -> abhyas_qc_<fileId>
+    const toCopy=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.indexOf('ha_qc_')===0){
+        const nk = 'abhyas_qc_'+k.slice(6);
+        if(localStorage.getItem(nk)===null) toCopy.push([nk, localStorage.getItem(k)]);
+      }
+    }
+    toCopy.forEach(([nk,v])=>localStorage.setItem(nk,v));
+  }catch(e){ console.warn('Storage key migration skipped:', e); }
+})();
+
+const APP_VERSION = '1.0';
+const APP_NAME = 'Abhyas V1';
 
 /* ═══════════════ 2. APP STATE ═══════════════ */
 const S = {
@@ -51,7 +88,7 @@ function _save(k,v){try{localStorage.setItem(k,JSON.stringify(v));if(PSYNC_KEYS.
 
 /* ── QDB: IndexedDB-backed question-set cache ── */
 const QDB = (() => {
-  const DB_NAME = 'ha_question_cache';
+  const DB_NAME = 'abhyas_question_cache';
   const STORE = 'sets';
   let dbPromise = null;
 
@@ -526,7 +563,7 @@ const UI = {
     // see :root in user.html). The original dark-navy theme is the
     // opt-in, applied via body.dark.
     document.body.classList.toggle('dark');
-    _save('ha_theme', document.body.classList.contains('dark')?'dark':'light');
+    _save('abhyas_theme', document.body.classList.contains('dark')?'dark':'light');
   }
 };
 
@@ -2248,7 +2285,7 @@ const DATA = {
 
 /* ═══════════════ TUTORIAL ═══════════════ */
 const TUTORIAL = {
-  _seenKey: 'ha_tut_seen',
+  _seenKey: 'abhyas_tut_seen',
   _steps: [
     {
       icon: '👋',
@@ -2388,9 +2425,9 @@ const TUTORIAL = {
 /* ═══════════════ 11. APP BOOT ═══════════════ */
 const APP = {
   async init(){
-    if(_load('ha_theme','light')==='dark') document.body.classList.add('dark');
+    if(_load('abhyas_theme','light')==='dark') document.body.classList.add('dark');
     const verEl = document.getElementById('sb-version');
-    if(verEl) verEl.textContent = `Abhyas v${APP_VERSION}`;
+    if(verEl) verEl.textContent = `${APP_NAME} (v${APP_VERSION})`;
 
     await QDB.migrateFromLocalStorage();
     // Migrate old session scopes (function in cloud-sync.js)
@@ -2487,7 +2524,7 @@ window.addEventListener('offline', ()=>{
 
 /* ── boot sequence ── */
 document.addEventListener('DOMContentLoaded', ()=>{
-  if(_load('ha_theme','light')==='dark') document.body.classList.add('dark');
+  if(_load('abhyas_theme','light')==='dark') document.body.classList.add('dark');
   PWA.init();
   AUTH.restore();
   NETCHECK.start();

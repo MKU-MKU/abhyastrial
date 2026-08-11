@@ -253,7 +253,7 @@ body{font-family:var(--ff);background:var(--c-bg);color:var(--t1);min-height:100
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9SdKwrfKNfjgDd-J0nYjYAhsU1d2PP2JfyMI30ol9AGSatyg/exec"; // ← REPLACE WITH YOUR DEPLOYED URL
 
 /* ═════════════════════════════════════════════════════════════════════════════
-   SESSION SCHEMA (stored in localStorage as 'hau_session')
+   SESSION SCHEMA (stored in localStorage as 'abhyas_session')
    ───────────────────────────────────────────────────────────────────────────
    {
      type: "user" | "admin",
@@ -279,7 +279,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9S
 
    FOR user.html DEVELOPERS:
    ─────────────────────────
-   1. Read: const s = JSON.parse(localStorage.getItem('hau_session'));
+   1. Read: const s = JSON.parse(localStorage.getItem('abhyas_session'));
    2. If !s or s.type !== 'user' → redirect to gateway.
    3. OFFLINE check:
       - if s.access.level === 'permanent' → ALLOW
@@ -290,6 +290,30 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9S
       - Update s.access if server state changed.
    5. Call APP.logout() from gateway if you need global logout.
    ═════════════════════════════════════════════════════════════════════════════ */
+
+// ── One-time migration: HAMRO AFNAI (hau_/ha_ prefixed) -> Abhyas
+// (abhyas_ prefixed) storage keys. Copies forward, never deletes, so
+// anyone with an existing session/progress stays logged in and keeps
+// their data across this rename. Runs before APP reads any session.
+// Mirrored in app.js (user.html) and admin.html, which read/write
+// these keys independently and don't share this script.
+(function migrateOldStorageKeys_(){
+  try{
+    const map = {
+      hau_session:'abhyas_session', hau_admin:'abhyas_admin',
+      ha_prog:'abhyas_prog', ha_bk:'abhyas_bk', ha_fl:'abhyas_fl', ha_wr:'abhyas_wr',
+      ha_tt:'abhyas_tt', ha_stk:'abhyas_stk', ha_forced_off:'abhyas_forced_off',
+      ha_exam_snap:'abhyas_exam_snap', ha_fcount:'abhyas_fcount', ha_cloud:'abhyas_cloud',
+      ha_profile:'abhyas_profile', ha_theme:'abhyas_theme', ha_tut_seen:'abhyas_tut_seen'
+    };
+    Object.keys(map).forEach(oldK=>{
+      const newK = map[oldK];
+      if(localStorage.getItem(newK)===null && localStorage.getItem(oldK)!==null){
+        localStorage.setItem(newK, localStorage.getItem(oldK));
+      }
+    });
+  }catch(e){ console.warn('Storage key migration skipped:', e); }
+})();
 
 const APP = {
   mode: 'login',
@@ -362,23 +386,23 @@ const APP = {
   /* ── Session helpers ── */
   getSession() {
     try {
-      const raw = localStorage.getItem('hau_session');
+      const raw = localStorage.getItem('abhyas_session');
       if (!raw) return null;
       return JSON.parse(raw);
     } catch (e) {
-      localStorage.removeItem('hau_session');
+      localStorage.removeItem('abhyas_session');
       return null;
     }
   },
 
   saveSession(obj) {
     this.session = obj;
-    localStorage.setItem('hau_session', JSON.stringify(obj));
+    localStorage.setItem('abhyas_session', JSON.stringify(obj));
   },
 
   clearSession() {
     this.session = null;
-    localStorage.removeItem('hau_session');
+    localStorage.removeItem('abhyas_session');
   },
 
   /* ── UI Mode Switcher ── */
