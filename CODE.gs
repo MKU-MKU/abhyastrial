@@ -153,6 +153,7 @@ function doGet(e) {
       case "adminlistusers":     result = adminListUsers(e.parameter); break;
       case "adminlistpayments":  result = adminListPayments(e.parameter); break;
       case "adminreviewpayment": result = adminReviewPayment(e.parameter); break;
+      case "adminreviewpaymentsbatch": result = adminReviewPaymentsBatch(e.parameter); break;
       case "admingrantaccess":   result = adminGrantAccess(e.parameter); break;
       case "adminupdateuser":    result = adminUpdateUser(e.parameter); break;
       case "admindeleteuser":    result = adminDeleteUser(e.parameter); break;
@@ -165,7 +166,7 @@ function doGet(e) {
       default:
         result = {
           success: false,
-          error: "Unknown action: '" + action + "'. Valid: ping, login, signup, checkSession, saveProgress, getProgress, submitPayment, getPaymentStatus, getSettings, getFile, adminLogin, adminChangePassword, adminListAdmins, adminCreateAdmin, adminDeleteAdmin, adminListUsers, adminListPayments, adminReviewPayment, adminGrantAccess, adminUpdateUser, adminDeleteUser, adminDeletePayment, adminUpdateSettings, adminUpdateSettingsBatch, adminStats, adminListLogs"
+          error: "Unknown action: '" + action + "'. Valid: ping, login, signup, checkSession, saveProgress, getProgress, submitPayment, getPaymentStatus, getSettings, getFile, adminLogin, adminChangePassword, adminListAdmins, adminCreateAdmin, adminDeleteAdmin, adminListUsers, adminListPayments, adminReviewPayment, adminReviewPaymentsBatch, adminGrantAccess, adminUpdateUser, adminDeleteUser, adminDeletePayment, adminUpdateSettings, adminUpdateSettingsBatch, adminStats, adminListLogs"
         };
     }
   } catch (err) {
@@ -449,21 +450,30 @@ function logAction_(admin, action, target, details) {
   }
 }
 
+// Logs append chronologically, and admin.html's "Activity Logs" tab
+// already paginates client-side — no admin session needs every log
+// entry ever written in one response. Unlike Users/Payments (bounded by
+// active account count), this sheet grows forever, so it's the one read
+// worth capping rather than reading getDataRange() in full every time.
+const LOGS_MAX_ROWS_READ = 1000;
+
 // Returns logs newest-first; admin.html paginates/filters client-side.
 function adminListLogs(p) {
   if (!checkAdmin_(p)) return { success: false, error: "Admin auth failed." };
   const sheet = getLogsSheet_();
-  const data = sheet.getDataRange().getValues();
-  const logs = [];
-  for (let i = 1; i < data.length; i++) {
-    logs.push({
-      timestamp: data[i][0],
-      admin: data[i][1],
-      action: data[i][2],
-      target: data[i][3],
-      details: data[i][4]
-    });
-  }
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { success: true, logs: [] };
+  const totalDataRows = lastRow - 1; // row 1 is the header
+  const rowsToRead = Math.min(totalDataRows, LOGS_MAX_ROWS_READ);
+  const startRow = lastRow - rowsToRead + 1;
+  const data = sheet.getRange(startRow, 1, rowsToRead, LOG_HEADERS.length).getValues();
+  const logs = data.map(row => ({
+    timestamp: row[0],
+    admin: row[1],
+    action: row[2],
+    target: row[3],
+    details: row[4]
+  }));
   logs.reverse();
   return { success: true, logs };
 }
@@ -1491,6 +1501,91 @@ function adminReviewPayment(p) {
 
   logAction_(actor, "Review Payment", username, "Status: " + status + (rejectionReason ? " (" + rejectionReason + ")" : ""));
   return { success: true, username, status };
+}
+
+// Batched sibling of adminReviewPayment() above — takes p.usernames as a
+// JSON array and applies the same status/rejectionReason to all of them
+// in ONE execution (one Payments read, one Users read, both turned into
+// lookup maps up front) instead of the admin panel firing N sequential
+// adminReviewPayment requests, one per selected checkbox. Same column
+// writes as the single-record version above; keep the two in sync if the
+// sheet schema ever changes.
+function adminReviewPaymentsBatch(p) {
+  const actor = checkAdmin_(p);
+  if (!actor) return { success: false, error: "Admin auth failed." };
+
+  let usernames;
+  try {
+    usernames = JSON.parse(p.usernames || "[]");
+  } catch (e) {
+    return { success: false, error: "usernames must be a JSON array." };
+  }
+  if (!Array.isArray(usernames) || !usernames.length) {
+    return { success: false, error: "No usernames provided." };
+  }
+
+  const status = String(p.status || "").trim();
+  const rejectionReason = String(p.rejectionReason || "").trim();
+  if (!["verified", "rejected", "pending"].includes(status)) {
+    return { success: false, error: "Status must be verified, rejected, or pending." };
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const paymentSheet = getPaymentsSheet_();
+    const payData = paymentSheet.getDataRange().getValues();
+    const payRowByUser = {};
+    for (let i = 1; i < payData.length; i++) {
+      payRowByUser[String(payData[i][0]).toLowerCase().trim()] = i + 1;
+    }
+
+    const userSheet = getUsersSheet_();
+    const userData = userSheet.getDataRange().getValues();
+    const userRowByUser = {};
+    for (let i = 1; i < userData.length; i++) {
+      userRowByUser[String(userData[i][0]).toLowerCase().trim()] = i + 1;
+    }
+
+    const nowIso = new Date().toISOString();
+    const results = [];
+
+    usernames.forEach(rawUsername => {
+      const username = String(rawUsername || "").trim();
+      const payRow = payRowByUser[username.toLowerCase()];
+      if (!payRow) { results.push({ username, success: false, error: "Payment not found." }); return; }
+
+      paymentSheet.getRange(payRow, 7).setValue(status);
+      if (rejectionReason && status === "rejected") paymentSheet.getRange(payRow, 8).setValue(rejectionReason);
+      paymentSheet.getRange(payRow, 11).setValue(nowIso);
+
+      const userRow = userRowByUser[username.toLowerCase()];
+      if (userRow) {
+        if (status === "verified") {
+          userSheet.getRange(userRow, 8).setValue("active");
+          userSheet.getRange(userRow, 13).setValue("verified");
+          userSheet.getRange(userRow, 14).setValue("true");
+          userSheet.getRange(userRow, 10).setValue(nowIso);
+          userSheet.getRange(userRow, 15).setValue("permanent");
+          userSheet.getRange(userRow, 16).setValue("");
+        } else if (status === "rejected") {
+          userSheet.getRange(userRow, 8).setValue("expired");
+          userSheet.getRange(userRow, 13).setValue("rejected");
+          userSheet.getRange(userRow, 14).setValue("false");
+        }
+      }
+
+      results.push({ username, success: true });
+    });
+
+    const okCount = results.filter(r => r.success).length;
+    logAction_(actor, "Bulk Review Payment", usernames.join(", "),
+      "Status: " + status + (rejectionReason ? " (" + rejectionReason + ")" : "") + " — " + okCount + "/" + usernames.length + " succeeded");
+
+    return { success: true, status, results };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // duration is either "permanent" (never expires)

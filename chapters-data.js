@@ -287,7 +287,16 @@ const ChapterData = {
 
   // Flat list of every usable file within one chapter (across all its
   // books) — used by Psycho Mode instead of walking DRIVE directly.
+  // Memoized per (lv, ch): DRIVE is static content baked into this file,
+  // never mutated at runtime, so there's no reason to rebuild the same
+  // list every time a screen re-renders. Callers only ever read/filter
+  // the result, never mutate it in place, so sharing the cached array is
+  // safe.
+  _chapterFileRefsCache: {},
   chapterFileRefs(lv, ch){
+    const cacheKey = `${lv}_${ch}`;
+    const cached = ChapterData._chapterFileRefsCache[cacheKey];
+    if (cached) return cached;
     const out = [];
     const books = ChapterData.books(lv, ch);
     for (const book of Object.keys(books)) {
@@ -298,18 +307,23 @@ const ChapterData = {
         out.push({ lv, ch, book, subtopic, name: `${book} — ${subtopic}`, fid, key: `${lv}_${ch}_${book}_${subtopic}` });
       }
     }
+    ChapterData._chapterFileRefsCache[cacheKey] = out;
     return out;
   },
 
   // Flat list of {lv, ch, name, fid, key} across the whole dataset — used by
   // Psycho Mode "select all", Daily Challenge, and Offline Cache download.
+  // Memoized for the same reason as chapterFileRefs() above.
+  _allFileRefsCache: null,
   allFileRefs(){
+    if (ChapterData._allFileRefsCache) return ChapterData._allFileRefsCache;
     const out = [];
     for (const lv of Object.keys(DRIVE)) {
       for (const ch of Object.keys(DRIVE[lv])) {
         out.push(...ChapterData.chapterFileRefs(lv, ch));
       }
     }
+    ChapterData._allFileRefsCache = out;
     return out;
   }
 };

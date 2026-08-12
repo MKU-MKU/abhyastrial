@@ -243,6 +243,7 @@ body{font-family:var(--ff);background:var(--c-bg);color:var(--t1);min-height:100
 <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 
 
+<script src="shared.js"></script>
 <script>
 /* ═════════════════════════════════════════════════════════════════════════════
    ABHYAS — UNIFIED GATEWAY
@@ -299,7 +300,7 @@ const APP = {
   session: null, // in-memory copy
 
   async init() {
-    await this.checkNet();
+    this.checkNet(); // fire in the background — don't block rendering on a ping
     setInterval(() => this.checkNet(), 15000);
 
     // Resume existing session
@@ -325,15 +326,8 @@ const APP = {
     const dot = document.getElementById('ndot');
     const txt = document.getElementById('nstat');
     const badge = document.getElementById('offline-badge');
-    try {
-      const ctrl = new AbortController();
-      const to = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch(GAS_URL + '?action=ping&_=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
-      clearTimeout(to);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
-      if (!data.pong && !data.success) throw new Error('Unexpected ping response');
-      this.online = true;
+    this.online = await pingBackend(GAS_URL);
+    if (this.online) {
       dot.className = 'ndot';
       txt.textContent = 'Backend connected';
       badge.classList.remove('show');
@@ -343,8 +337,7 @@ const APP = {
       if (!wasOnline && navigator.serviceWorker && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_STALE_IF_ONLINE' });
       }
-    } catch (e) {
-      this.online = false;
+    } else {
       dot.className = 'ndot off';
       txt.textContent = 'Offline mode';
       if (this.session) badge.classList.add('show');

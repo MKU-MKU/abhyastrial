@@ -472,6 +472,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 
 <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 
+<script src="shared.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION — Replace with your GAS Web App URL
@@ -479,9 +480,8 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwAhfyQm7NvxaNjgRm3oC9SdKwrfKNfjgDd-J0nYjYAhsU1d2PP2JfyMI30ol9AGSatyg/exec";
 
 // ═══════════════════════════════════════════════════════════════
-// ADMIN CORE
+// ADMIN CORE — esc() and pingBackend() now come from shared.js
 // ═══════════════════════════════════════════════════════════════
-function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 
 const ADMIN = {
   creds: null,
@@ -552,30 +552,45 @@ const ADMIN = {
     return await r.json();
   },
 
-  async refresh() {
+  ALL_SCOPES: ['stats','users','payments','settings','logs','admins'],
+
+  // scope: optional array of which pieces to reload, e.g. ['stats','users']
+  // after granting one user access. Omit it (or pass nothing) for the full
+  // six-endpoint reload — that's still what the manual refresh button and
+  // the 'r' shortcut use, since at that point the person genuinely wants
+  // everything re-synced.
+  async refresh(scope) {
+    const want = (scope && scope.length) ? scope : this.ALL_SCOPES;
+    const isFull = want === this.ALL_SCOPES;
     this.showLoading('Refreshing data…');
     try {
-      const [stats, users, payments, settings, logs, admins] = await Promise.all([
-        this.post('adminStats'),
-        this.post('adminListUsers'),
-        this.post('adminListPayments'),
-        this.post('getSettings'),
-        this.post('adminListLogs').catch(() => ({success:false, logs:[]})),
-        this.post('adminListAdmins').catch(() => ({success:false, admins:[]}))
-      ]);
+      const fetchers = {
+        stats:    () => this.post('adminStats'),
+        users:    () => this.post('adminListUsers'),
+        payments: () => this.post('adminListPayments'),
+        settings: () => this.post('getSettings'),
+        logs:     () => this.post('adminListLogs').catch(() => ({success:false, logs:[]})),
+        admins:   () => this.post('adminListAdmins').catch(() => ({success:false, admins:[]}))
+      };
+      const results = await Promise.all(want.map(k => fetchers[k]()));
       const failures = [];
-      if (stats.success) this.renderStats(stats.stats); else failures.push('stats: '+(stats.error||'unknown'));
-      if (users.success) { this.data.users = users.users; USERS.render(); } else failures.push('users: '+(users.error||'unknown'));
-      if (payments.success) { this.data.payments = payments.payments; PAYMENTS.render(); } else failures.push('payments: '+(payments.error||'unknown'));
-      if (settings.success) { this.data.settings = settings.settings; SETTINGS.load(); }
-      if (logs.success) { this.data.logs = logs.logs; LOGS.render(); }
-      if (admins.success) ADMINS.render(admins.admins);
+      want.forEach((k, i) => {
+        const r = results[i];
+        if (k === 'stats') { if (r.success) this.renderStats(r.stats); else failures.push('stats: '+(r.error||'unknown')); }
+        else if (k === 'users') { if (r.success) { this.data.users = r.users; USERS.render(); } else failures.push('users: '+(r.error||'unknown')); }
+        else if (k === 'payments') { if (r.success) { this.data.payments = r.payments; PAYMENTS.render(); } else failures.push('payments: '+(r.error||'unknown')); }
+        else if (k === 'settings') { if (r.success) { this.data.settings = r.settings; SETTINGS.load(); } }
+        else if (k === 'logs') { if (r.success) { this.data.logs = r.logs; LOGS.render(); } }
+        else if (k === 'admins') { if (r.success) ADMINS.render(r.admins); }
+      });
       if (failures.length) {
         this.toast('❌ Some data failed to load — ' + failures[0] + (failures.length>1 ? ` (+${failures.length-1} more)` : ''));
         if (failures.some(f => /auth failed/i.test(f))) {
           this.toast('🔒 Admin session invalid — please log out and back in.');
         }
-      } else {
+      } else if (isFull) {
+        // Single-scope refreshes follow a mutating action that already
+        // toasted its own success message — no need to double up.
         this.toast('✅ Data refreshed');
       }
     } catch(e) { this.toast('❌ Refresh failed: ' + e.message); }
@@ -779,15 +794,18 @@ const USERS = {
     this.filter();
   },
 
-  filter() {
+  _visibleRows() {
     const q = document.getElementById('u-search').value.toLowerCase();
     const f = document.getElementById('u-filter').value;
-    const rows = ADMIN.data.users.filter(u => {
+    return ADMIN.data.users.filter(u => {
       const match = !q || (u.username||'').toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
       const status = f==='all' ? true : u.status===f;
       return match && status;
     });
-    this.renderPage(rows);
+  },
+
+  filter() {
+    this.renderPage(this._visibleRows());
   },
 
   render() { this.filter(); },
@@ -840,7 +858,7 @@ const USERS = {
     ADMIN.showLoading('Granting access…');
     try {
       const res = await ADMIN.post('adminGrantAccess', {username, duration});
-      if (res.success) { ADMIN.toast('✅ Access granted'); MODAL.close('user'); ADMIN.refresh(); }
+      if (res.success) { ADMIN.toast('✅ Access granted'); MODAL.close('user'); ADMIN.refresh(['stats','users']); }
       else throw new Error(res.error);
     } catch(e) { ADMIN.toast('❌ ' + e.message); }
     ADMIN.hideLoading();
@@ -853,14 +871,7 @@ const USERS = {
 
   toggleAll() {
     const all = document.getElementById('u-chk-all').checked;
-    const q = document.getElementById('u-search').value.toLowerCase();
-    const f = document.getElementById('u-filter').value;
-    const rows = ADMIN.data.users.filter(u => {
-      const match = !q || (u.username||'').toLowerCase().includes(q) || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
-      const status = f==='all' ? true : u.status===f;
-      return match && status;
-    });
-    rows.forEach(u => all ? this.selected.add(u.username) : this.selected.delete(u.username));
+    this._visibleRows().forEach(u => all ? this.selected.add(u.username) : this.selected.delete(u.username));
     this.filter();
   },
 
@@ -946,7 +957,7 @@ const USERS = {
       if (res.success) { 
         ADMIN.toast('✅ User updated'); 
         MODAL.close('user');
-        ADMIN.refresh(); 
+        ADMIN.refresh(['stats','users']); 
       } else throw new Error(res.error);
     } catch(e) { ADMIN.toast('❌ ' + e.message); }
   },
@@ -956,7 +967,7 @@ const USERS = {
     ADMIN.showLoading('Deleting user…');
     try {
       const res = await ADMIN.post('adminDeleteUser', {username});
-      if (res.success) { ADMIN.toast('✅ Deleted ' + username); ADMIN.refresh(); }
+      if (res.success) { ADMIN.toast('✅ Deleted ' + username); ADMIN.refresh(['stats','users','payments']); }
       else throw new Error(res.error);
     } catch(e) { ADMIN.toast('❌ ' + e.message); }
     ADMIN.hideLoading();
@@ -981,15 +992,18 @@ const PAYMENTS = {
     this.filter();
   },
 
-  filter() {
+  _visibleRows() {
     const q = document.getElementById('p-search').value.toLowerCase();
     const f = document.getElementById('p-filter').value;
-    const rows = ADMIN.data.payments.filter(p => {
+    return ADMIN.data.payments.filter(p => {
       const match = !q || (p.username||'').toLowerCase().includes(q) || (p.txId||'').toLowerCase().includes(q);
       const status = f==='all' ? true : p.status===f;
       return match && status;
     });
-    this.renderPage(rows);
+  },
+
+  filter() {
+    this.renderPage(this._visibleRows());
     this.updateBulkBar();
   },
 
@@ -1036,14 +1050,7 @@ const PAYMENTS = {
 
   toggleAll() {
     const all = document.getElementById('p-chk-all').checked;
-    const q = document.getElementById('p-search').value.toLowerCase();
-    const f = document.getElementById('p-filter').value;
-    const rows = ADMIN.data.payments.filter(p => {
-      const match = !q || (p.username||'').toLowerCase().includes(q) || (p.txId||'').toLowerCase().includes(q);
-      const status = f==='all' ? true : p.status===f;
-      return match && status;
-    });
-    rows.forEach(p => all ? this.selected.add(p.username) : this.selected.delete(p.username));
+    this._visibleRows().forEach(p => all ? this.selected.add(p.username) : this.selected.delete(p.username));
     this.updateBulkBar();
     this.filter();
   },
@@ -1065,36 +1072,37 @@ const PAYMENTS = {
   async bulkVerify() {
     if (!this.selected.size) return;
     if (!confirm('Verify ' + this.selected.size + ' payment(s)?')) return;
-    ADMIN.showLoading('Verifying payments…');
-    let success = 0, failed = 0;
-    for (const username of this.selected) {
-      try {
-        const res = await ADMIN.post('adminReviewPayment', {username, status:'verified'});
-        if (res.success) success++; else failed++;
-      } catch(e) { failed++; }
-    }
-    ADMIN.hideLoading();
-    ADMIN.toast('✅ ' + success + ' verified' + (failed ? ', ❌ ' + failed + ' failed' : ''));
-    this.clearSelection();
-    ADMIN.refresh();
+    await this._bulkReview('verified');
   },
 
   async bulkReject() {
     if (!this.selected.size) return;
     const reason = prompt('Rejection reason for ' + this.selected.size + ' payment(s):');
     if (reason === null) return;
-    ADMIN.showLoading('Rejecting payments…');
-    let success = 0, failed = 0;
-    for (const username of this.selected) {
-      try {
-        const res = await ADMIN.post('adminReviewPayment', {username, status:'rejected', rejectionReason: reason});
-        if (res.success) success++; else failed++;
-      } catch(e) { failed++; }
+    await this._bulkReview('rejected', reason);
+  },
+
+  // Single request for the whole selection instead of one adminReviewPayment
+  // call per row — see adminReviewPaymentsBatch in CODE.gs.
+  async _bulkReview(status, rejectionReason) {
+    const usernames = [...this.selected];
+    ADMIN.showLoading((status==='verified'?'Verifying ':'Rejecting ') + usernames.length + ' payment(s)…');
+    try {
+      const res = await ADMIN.post('adminReviewPaymentsBatch', {
+        usernames: JSON.stringify(usernames),
+        status,
+        rejectionReason: rejectionReason || ''
+      });
+      if (!res.success) throw new Error(res.error || 'Batch review failed');
+      const ok = res.results.filter(r => r.success).length;
+      const failed = res.results.length - ok;
+      ADMIN.toast('✅ ' + ok + (status==='verified'?' verified':' rejected') + (failed ? ', ❌ ' + failed + ' failed' : ''));
+    } catch(e) {
+      ADMIN.toast('❌ ' + e.message);
     }
     ADMIN.hideLoading();
-    ADMIN.toast('✅ ' + success + ' rejected' + (failed ? ', ❌ ' + failed + ' failed' : ''));
     this.clearSelection();
-    ADMIN.refresh();
+    ADMIN.refresh(['stats','payments','users']);
   },
 
   review(username) { MODAL.openReview(username, 'verified'); },
@@ -1105,7 +1113,7 @@ const PAYMENTS = {
     ADMIN.showLoading('Deleting…');
     try {
       const res = await ADMIN.post('adminDeletePayment', {username});
-      if (res.success) { ADMIN.toast('✅ Deleted'); ADMIN.refresh(); }
+      if (res.success) { ADMIN.toast('✅ Deleted'); ADMIN.refresh(['stats','payments']); }
       else throw new Error(res.error);
     } catch(e) { ADMIN.toast('❌ ' + e.message); }
     ADMIN.hideLoading();
@@ -1154,6 +1162,16 @@ const MODAL = {
   async confirmReview(username, status) {
     const reason = document.getElementById('rej-reason')?.value || '';
     const duration = document.getElementById('grant-duration')?.value || 'permanent';
+    if (status === 'verified') {
+      const p = ADMIN.data.payments.find(x => x.username === username);
+      // The ⚠️ duplicate-TXN-ID badge was previously cosmetic — approving
+      // still went through identically either way. Now it actually stops
+      // the one-click path and makes the admin confirm they've checked it.
+      if (p && p.duplicateTxId && !confirm(
+        `This transaction ID was also submitted by: ${p.duplicateTxIdUsers.join(', ')}.\n\n` +
+        `Verify anyway?`
+      )) return;
+    }
     ADMIN.showLoading(status==='verified'?'Verifying…':'Rejecting…');
     try {
       const res = await ADMIN.post('adminReviewPayment', {username, status, rejectionReason: reason});
@@ -1163,7 +1181,7 @@ const MODAL = {
         }
         ADMIN.toast(status==='verified'?`✅ Verified! User now has ${duration==='year'?'1-year':'permanent'} access.`:'✅ Rejected.'); 
         MODAL.close('review'); 
-        ADMIN.refresh(); 
+        ADMIN.refresh(['stats','payments','users']); 
       }
       else throw new Error(res.error);
     } catch(e) { ADMIN.toast('❌ ' + e.message); }
@@ -1273,13 +1291,13 @@ const SETTINGS = {
       const res = await ADMIN.post('adminUpdateSettingsBatch', {settings});
       if (res.success) {
         ADMIN.toast('✅ Settings saved');
-        ADMIN.refresh();
+        ADMIN.refresh(['settings']);
       } else {
         for (const s of settings) {
           await ADMIN.post('adminUpdateSettings', {key: s.key, value: s.value});
         }
         ADMIN.toast('✅ Settings saved');
-        ADMIN.refresh();
+        ADMIN.refresh(['settings']);
       }
     } catch(e) { ADMIN.toast('❌ Save failed: ' + e.message); }
     ADMIN.hideLoading();

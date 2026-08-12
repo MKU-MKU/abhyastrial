@@ -145,7 +145,7 @@ const QDB = (() => {
   return { get, set, del, keys, clear, migrateFromLocalStorage };
 })();
 
-function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+// esc() now comes from shared.js (loaded before this file in user.html)
 function renderMath(el){
   if(!el || typeof window.renderMathInElement !== 'function') return;
   try{
@@ -250,23 +250,10 @@ const NETCHECK = {
   _timer: null,
   async ping(){
     if(S.forcedOffline) return S.online;
-    try{
-      const ctrl = new AbortController();
-      const to = setTimeout(()=>ctrl.abort(), 8000);
-      const r = await fetch(`${APPS}?${qs({action:'ping', _:Date.now()})}`, { signal: ctrl.signal, cache: 'no-store' });
-      clearTimeout(to);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const data = await r.json();
-      const wasOnline = S.online;
-      S.online = !!data.pong || !!data.success;
-      if(S.online !== wasOnline){ _updateNetBtn(); _updateOfflineWarn(); }
-      return S.online;
-    }catch(e){
-      const wasOnline = S.online;
-      S.online = false;
-      if(wasOnline){ _updateNetBtn(); _updateOfflineWarn(); }
-      return false;
-    }
+    const wasOnline = S.online;
+    S.online = await pingBackend(APPS);
+    if(S.online !== wasOnline){ _updateNetBtn(); _updateOfflineWarn(); }
+    return S.online;
   },
   start(){
     if(NETCHECK._timer) return;
@@ -282,15 +269,13 @@ const AUTH = {
       AUTH._bounce();
       return;
     }
-    await NETCHECK.ping();
-    if(!S.online || S.forcedOffline){
+    if(S.forcedOffline || !S.online){
       if(AUTH._isValidOffline(u)) AUTH._enter(u);
       else AUTH._bounce();
       return;
     }
     try{
-      const r = await netFetch(`${APPS}?${qs({action:'checkSession', token:u.token, username:u.username})}`, {redirect:'follow'});
-      const res = await r.json();
+      const { res } = await AUTH._checkSessionOnce(u);
       if(!res.success){
         if(AUTH._isValidOffline(u)) AUTH._enter(u);
         else AUTH._bounce();
@@ -307,6 +292,13 @@ const AUTH = {
       if(AUTH._isValidOffline(u)) AUTH._enter(u);
       else AUTH._bounce();
     }
+  },
+  // Shared by restore() and the periodic recheck below so the
+  // checkSession fetch/parse logic lives in exactly one place.
+  async _checkSessionOnce(u){
+    const r = await netFetch(`${APPS}?${qs({action:'checkSession', token:u.token, username:u.username})}`, {redirect:'follow'});
+    const res = await r.json();
+    return { res };
   },
   _isValidOffline(u){
     const a = u.access || {};
@@ -374,24 +366,40 @@ const AUTH = {
     window.location.href = 'index.html';
   },
   _revalidateTimer:null,
+  _visibilityBound:false,
+  RECHECK_MS: 10*60*1000,
   startPeriodicRecheck(){
     if(AUTH._revalidateTimer) clearInterval(AUTH._revalidateTimer);
-    AUTH._revalidateTimer = setInterval(async ()=>{
-      if(!S.online || S.forcedOffline || !S.user) return;
-      try{
-        const r = await netFetch(`${APPS}?${qs({action:'checkSession', token:S.user.token, username:S.user.username})}`, {redirect:'follow'});
-        const res = await r.json();
-        if(res.success){
-          const updated = AUTH._buildSession(S.user, res);
-          _save(LS.USER, updated);
-          if(updated.access.level === 'permanent' || updated.access.level === 'trial'){
-            S.user = updated;
-          } else {
-            AUTH._bounce();
-          }
+    AUTH._revalidateTimer = setInterval(()=>AUTH._periodicRecheckTick(), AUTH.RECHECK_MS);
+    // Skip ticks while the tab is backgrounded (no point spending Apps
+    // Script quota on a session the person isn't looking at), but catch
+    // up immediately when they come back if it's been a while — rather
+    // than silently waiting out the rest of a 10-minute timer.
+    if(!AUTH._visibilityBound){
+      AUTH._visibilityBound = true;
+      document.addEventListener('visibilitychange', ()=>{
+        if(document.visibilityState === 'visible' && S.user){
+          const last = S.user.lastVerified || 0;
+          if(Date.now() - last > AUTH.RECHECK_MS) AUTH._periodicRecheckTick();
         }
-      }catch{}
-    }, 10*60*1000);
+      });
+    }
+  },
+  async _periodicRecheckTick(){
+    if(document.visibilityState === 'hidden') return;
+    if(!S.online || S.forcedOffline || !S.user) return;
+    try{
+      const { res } = await AUTH._checkSessionOnce(S.user);
+      if(res.success){
+        const updated = AUTH._buildSession(S.user, res);
+        _save(LS.USER, updated);
+        if(updated.access.level === 'permanent' || updated.access.level === 'trial'){
+          S.user = updated;
+        } else {
+          AUTH._bounce();
+        }
+      }
+    }catch{}
   }
 };
 
@@ -856,7 +864,8 @@ const QUIZ = {
       throw new Error('You are offline and this set is not cached yet. Go to the Offline Cache tab to download it while online.');
     }
     try{
-      const r = await netFetch(`${APPS}?${qs({action:'getFile', fileId})}`, {redirect:'follow'}, 25000);
+      const timeoutMs = attempt === 1 ? 25000 : 15000;
+      const r = await netFetch(`${APPS}?${qs({action:'getFile', fileId})}`, {redirect:'follow'}, timeoutMs);
       const text = await r.text();
       if(text.trim().startsWith('<')){
         throw new Error('Server returned an HTML page instead of JSON — the Apps Script may be down or requires re-authorisation.');

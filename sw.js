@@ -25,9 +25,9 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* 👇 Bump this name whenever you update any shell file (index.html,
-   user.html, app.js, chapters-data.js, manifest.json). All previous
-   caches will be deleted immediately on activation. */
-const CACHE_NAME = 'abhyas';   // Abhyas V1 — fresh start, no migration from old caches
+   user.html, app.js, chapters-data.js, shared.js, manifest.json). All
+   previous caches will be deleted immediately on activation. */
+const CACHE_NAME = 'abhyas-v2';   // bumped: shared.js added to the shell
 
 const SHELL = [
   './',
@@ -35,6 +35,7 @@ const SHELL = [
   './user.html',
   './app.js',
   './chapters-data.js',
+  './shared.js',
   './manifest.json'
   // NOTE: admin.html is deliberately NOT in SHELL — it must never be
   // served from cache.
