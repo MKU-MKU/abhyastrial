@@ -199,6 +199,36 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Runs fn() while holding the script-wide lock, returning a friendly
+// error instead of throwing if the lock can't be acquired in time.
+//
+// IMPORTANT: a lock only protects what it wraps. Row indices captured by
+// findUserRow_/findAdminRow_/a manual getDataRange() scan become stale
+// the instant ANY concurrent execution inserts or deletes a row above
+// them — deleteRow() shifts every subsequent row up by one. Before this
+// helper existed, only a few functions (handleSignup, adminCreateAdmin,
+// saveProgress, adminReviewPaymentsBatch) took the lock; every other
+// row-mutating admin action ran unlocked. That's not "less protected" —
+// it's *unprotected entirely*, because an unlocked deleteRow() can still
+// shift a row a locked function already read the index for, just after
+// it released the lock (or one that never took it at all). The lock only
+// does its job once every row-mutating function goes through it, which
+// is why this helper is now used consistently below rather than being
+// opt-in per function.
+function withLock_(fn) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (e) {
+    return { success: false, error: "Server is busy, please try again in a moment." };
+  }
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SETUP
    ═══════════════════════════════════════════════════════════════ */
@@ -1027,13 +1057,7 @@ function saveProgress(p) {
     return { success: false, error: "Malformed progress data." };
   }
 
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(10000);
-  } catch (e) {
-    return { success: false, error: "Server is busy, please try again in a moment." };
-  }
-  try {
+  return withLock_(() => {
     const sheet = getProgressSheet_();
     const found = findProgressRow_(sheet, username);
     const now = new Date().toISOString();
@@ -1043,9 +1067,7 @@ function saveProgress(p) {
       sheet.appendRow([username, dataStr, now]);
     }
     return { success: true, updatedAt: now };
-  } finally {
-    lock.releaseLock();
-  }
+  });
 }
 
 // Returns the caller's own synced progress blob, or data:null if they've
@@ -1104,20 +1126,14 @@ function submitPayment(p) {
   userSheet.getRange(userFound.rowIndex, 8).setValue("payment_pending");
   userSheet.getRange(userFound.rowIndex, 13).setValue("pending");
 
-  // Handle payment record
   const sheet = getPaymentsSheet_();
-  const data = sheet.getDataRange().getValues();
-  let existingRow = null;
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === username.toLowerCase()) {
-      existingRow = i + 1;
-      break;
-    }
-  }
-
   const now = new Date().toISOString();
   let screenshotUrl = "";
 
+  // Deliberately outside the lock below: a Drive upload can be the
+  // slowest part of this request, and the script-wide lock is shared by
+  // every other action (signups, other payments, admin edits). Holding
+  // it here would serialize all of those behind one person's upload.
   if (screenshotData && screenshotData.startsWith("data:image")) {
     try {
       const base64Data = screenshotData.split(",")[1];
@@ -1133,24 +1149,40 @@ function submitPayment(p) {
     screenshotUrl = screenshotData;
   }
 
-  if (existingRow) {
-    if (name) sheet.getRange(existingRow, 2).setValue(name);
-    if (email) sheet.getRange(existingRow, 3).setValue(email);
-    if (mobile) sheet.getRange(existingRow, 4).setValue(mobile);
-    sheet.getRange(existingRow, 5).setValue(txId);
-    if (remarks) sheet.getRange(existingRow, 6).setValue(remarks);
-    sheet.getRange(existingRow, 7).setValue("pending");
-    sheet.getRange(existingRow, 8).setValue("");
-    if (screenshotUrl) sheet.getRange(existingRow, 9).setValue(screenshotUrl);
-    sheet.getRange(existingRow, 10).setValue(now);
-  } else {
-    sheet.appendRow([username, name, email, mobile, txId, remarks, "pending", "", screenshotUrl, now, ""]);
-  }
+  // The existingRow scan + write DOES need the lock: two submissions for
+  // the same user arriving close together (double-tap, or a client retry
+  // after a slow/timed-out response) could otherwise both read "no
+  // existing row" and both append — leaving two payment rows for one
+  // user, which then confuses every admin-side lookup keyed by username.
+  return withLock_(() => {
+    const data = sheet.getDataRange().getValues();
+    let existingRow = null;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === username.toLowerCase()) {
+        existingRow = i + 1;
+        break;
+      }
+    }
 
-  return {
-    success: true,
-    message: "Payment submitted successfully. Waiting for admin verification."
-  };
+    if (existingRow) {
+      if (name) sheet.getRange(existingRow, 2).setValue(name);
+      if (email) sheet.getRange(existingRow, 3).setValue(email);
+      if (mobile) sheet.getRange(existingRow, 4).setValue(mobile);
+      sheet.getRange(existingRow, 5).setValue(txId);
+      if (remarks) sheet.getRange(existingRow, 6).setValue(remarks);
+      sheet.getRange(existingRow, 7).setValue("pending");
+      sheet.getRange(existingRow, 8).setValue("");
+      if (screenshotUrl) sheet.getRange(existingRow, 9).setValue(screenshotUrl);
+      sheet.getRange(existingRow, 10).setValue(now);
+    } else {
+      sheet.appendRow([username, name, email, mobile, txId, remarks, "pending", "", screenshotUrl, now, ""]);
+    }
+
+    return {
+      success: true,
+      message: "Payment submitted successfully. Waiting for admin verification."
+    };
+  });
 }
 
 function getPaymentStatus(p) {
@@ -1312,15 +1344,17 @@ function adminChangePassword(p) {
     return { success: false, error: "New password must be at least 6 characters." };
   }
   const sheet = getAdminsSheet_();
-  const found = findAdminRow_(sheet, actor);
-  if (!found) return { success: false, error: "Admin account not found." };
-  const verify = verifyPassword_(currentPassword, found.row[1]);
-  if (!verify.ok) return { success: false, error: "Current password is incorrect." };
+  return withLock_(() => {
+    const found = findAdminRow_(sheet, actor);
+    if (!found) return { success: false, error: "Admin account not found." };
+    const verify = verifyPassword_(currentPassword, found.row[1]);
+    if (!verify.ok) return { success: false, error: "Current password is incorrect." };
 
-  const salt = makeSalt_();
-  sheet.getRange(found.rowIndex, 2).setValue(salt + ":" + hashPassSalted_(newPassword, salt));
-  logAction_(actor, "Change Admin Password", actor, "");
-  return { success: true, message: "Password changed." };
+    const salt = makeSalt_();
+    sheet.getRange(found.rowIndex, 2).setValue(salt + ":" + hashPassSalted_(newPassword, salt));
+    logAction_(actor, "Change Admin Password", actor, "");
+    return { success: true, message: "Password changed." };
+  });
 }
 
 // Any already-authenticated admin can create another admin account —
@@ -1383,14 +1417,16 @@ function adminDeleteAdmin(p) {
     return { success: false, error: "You can't delete the admin account you're currently logged in as." };
   }
   const sheet = getAdminsSheet_();
-  if (sheet.getLastRow() - 1 <= 1) {
-    return { success: false, error: "Can't delete the last remaining admin account." };
-  }
-  const found = findAdminRow_(sheet, username);
-  if (!found) return { success: false, error: "Admin not found." };
-  sheet.deleteRow(found.rowIndex);
-  logAction_(actor, "Delete Admin", username, "");
-  return { success: true, message: "Admin account deleted." };
+  return withLock_(() => {
+    if (sheet.getLastRow() - 1 <= 1) {
+      return { success: false, error: "Can't delete the last remaining admin account." };
+    }
+    const found = findAdminRow_(sheet, username);
+    if (!found) return { success: false, error: "Admin not found." };
+    sheet.deleteRow(found.rowIndex);
+    logAction_(actor, "Delete Admin", username, "");
+    return { success: true, message: "Admin account deleted." };
+  });
 }
 
 function adminListUsers(p) {
@@ -1462,6 +1498,7 @@ function adminReviewPayment(p) {
     return { success: false, error: "Status must be verified, rejected, or pending." };
   }
 
+  return withLock_(() => {
   const sheet = getPaymentsSheet_();
   const data = sheet.getDataRange().getValues();
   let paymentRow = null;
@@ -1501,6 +1538,7 @@ function adminReviewPayment(p) {
 
   logAction_(actor, "Review Payment", username, "Status: " + status + (rejectionReason ? " (" + rejectionReason + ")" : ""));
   return { success: true, username, status };
+  });
 }
 
 // Batched sibling of adminReviewPayment() above — takes p.usernames as a
@@ -1530,9 +1568,7 @@ function adminReviewPaymentsBatch(p) {
     return { success: false, error: "Status must be verified, rejected, or pending." };
   }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
+  return withLock_(() => {
     const paymentSheet = getPaymentsSheet_();
     const payData = paymentSheet.getDataRange().getValues();
     const payRowByUser = {};
@@ -1583,9 +1619,7 @@ function adminReviewPaymentsBatch(p) {
       "Status: " + status + (rejectionReason ? " (" + rejectionReason + ")" : "") + " — " + okCount + "/" + usernames.length + " succeeded");
 
     return { success: true, status, results };
-  } finally {
-    lock.releaseLock();
-  }
+  });
 }
 
 // duration is either "permanent" (never expires)
@@ -1604,25 +1638,28 @@ function adminGrantAccess(p) {
   }
 
   const sheet = getUsersSheet_();
-  const found = findUserRow_(sheet, username);
-  if (!found) return { success: false, error: "User not found." };
 
-  let expiresAtIso = "";
-  if (duration === "year") {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 365);
-    expiresAtIso = expiresAt.toISOString();
-  }
+  return withLock_(() => {
+    const found = findUserRow_(sheet, username);
+    if (!found) return { success: false, error: "User not found." };
 
-  sheet.getRange(found.rowIndex, 8).setValue("active");           // status
-  sheet.getRange(found.rowIndex, 10).setValue(new Date().toISOString()); // approvedAt
-  sheet.getRange(found.rowIndex, 13).setValue("verified");        // paymentStatus
-  sheet.getRange(found.rowIndex, 14).setValue("true");            // permanentAccess
-  sheet.getRange(found.rowIndex, 15).setValue(duration === "year" ? "yearly" : "permanent"); // accessType
-  sheet.getRange(found.rowIndex, 16).setValue(expiresAtIso);      // accessExpiresAt
+    let expiresAtIso = "";
+    if (duration === "year") {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 365);
+      expiresAtIso = expiresAt.toISOString();
+    }
 
-  logAction_(actor, "Grant Access", username, "Duration: " + duration);
-  return { success: true, username, duration, accessExpiresAt: expiresAtIso };
+    sheet.getRange(found.rowIndex, 8).setValue("active");           // status
+    sheet.getRange(found.rowIndex, 10).setValue(new Date().toISOString()); // approvedAt
+    sheet.getRange(found.rowIndex, 13).setValue("verified");        // paymentStatus
+    sheet.getRange(found.rowIndex, 14).setValue("true");            // permanentAccess
+    sheet.getRange(found.rowIndex, 15).setValue(duration === "year" ? "yearly" : "permanent"); // accessType
+    sheet.getRange(found.rowIndex, 16).setValue(expiresAtIso);      // accessExpiresAt
+
+    logAction_(actor, "Grant Access", username, "Duration: " + duration);
+    return { success: true, username, duration, accessExpiresAt: expiresAtIso };
+  });
 }
 
 // Column indices below follow USER_HEADERS: name=3, email=4, mobile=5,
@@ -1634,28 +1671,31 @@ function adminUpdateUser(p) {
   if (!username) return { success: false, error: "Username required." };
 
   const sheet = getUsersSheet_();
-  const found = findUserRow_(sheet, username);
-  if (!found) return { success: false, error: "User not found." };
 
-  const changes = [];
-  if (p.name !== undefined) { sheet.getRange(found.rowIndex, 3).setValue(p.name); changes.push("name"); }
-  if (p.email !== undefined) { sheet.getRange(found.rowIndex, 4).setValue(p.email); changes.push("email"); }
-  if (p.mobile !== undefined) { sheet.getRange(found.rowIndex, 5).setValue(p.mobile); changes.push("mobile"); }
-  if (p.status !== undefined && p.status !== "") { sheet.getRange(found.rowIndex, 8).setValue(p.status); changes.push("status→" + p.status); }
-  if (p.permanentAccess !== undefined) {
-    const val = (p.permanentAccess === true || p.permanentAccess === "true") ? "true" : "false";
-    sheet.getRange(found.rowIndex, 14).setValue(val);
-    changes.push("permanentAccess→" + val);
-  }
-  if (p.password) {
-    if (String(p.password).length < 6) return { success: false, error: "Password must be at least 6 characters." };
-    const salt = makeSalt_();
-    sheet.getRange(found.rowIndex, 2).setValue(salt + ":" + hashPassSalted_(p.password, salt));
-    changes.push("password reset");
-  }
+  return withLock_(() => {
+    const found = findUserRow_(sheet, username);
+    if (!found) return { success: false, error: "User not found." };
 
-  logAction_(actor, "Update User", username, changes.join(", "));
-  return { success: true, username };
+    const changes = [];
+    if (p.name !== undefined) { sheet.getRange(found.rowIndex, 3).setValue(p.name); changes.push("name"); }
+    if (p.email !== undefined) { sheet.getRange(found.rowIndex, 4).setValue(p.email); changes.push("email"); }
+    if (p.mobile !== undefined) { sheet.getRange(found.rowIndex, 5).setValue(p.mobile); changes.push("mobile"); }
+    if (p.status !== undefined && p.status !== "") { sheet.getRange(found.rowIndex, 8).setValue(p.status); changes.push("status→" + p.status); }
+    if (p.permanentAccess !== undefined) {
+      const val = (p.permanentAccess === true || p.permanentAccess === "true") ? "true" : "false";
+      sheet.getRange(found.rowIndex, 14).setValue(val);
+      changes.push("permanentAccess→" + val);
+    }
+    if (p.password) {
+      if (String(p.password).length < 6) return { success: false, error: "Password must be at least 6 characters." };
+      const salt = makeSalt_();
+      sheet.getRange(found.rowIndex, 2).setValue(salt + ":" + hashPassSalted_(p.password, salt));
+      changes.push("password reset");
+    }
+
+    logAction_(actor, "Update User", username, changes.join(", "));
+    return { success: true, username };
+  });
 }
 
 function adminDeleteUser(p) {
@@ -1663,11 +1703,13 @@ function adminDeleteUser(p) {
   if (!actor) return { success: false, error: "Admin auth failed." };
   const username = String(p.username || "").trim();
   const sheet = getUsersSheet_();
-  const found = findUserRow_(sheet, username);
-  if (!found) return { success: false, error: "User not found." };
-  sheet.deleteRow(found.rowIndex);
-  logAction_(actor, "Delete User", username, "");
-  return { success: true, deleted: username };
+  return withLock_(() => {
+    const found = findUserRow_(sheet, username);
+    if (!found) return { success: false, error: "User not found." };
+    sheet.deleteRow(found.rowIndex);
+    logAction_(actor, "Delete User", username, "");
+    return { success: true, deleted: username };
+  });
 }
 
 function adminDeletePayment(p) {
@@ -1675,15 +1717,17 @@ function adminDeletePayment(p) {
   if (!actor) return { success: false, error: "Admin auth failed." };
   const username = String(p.username || "").trim();
   const sheet = getPaymentsSheet_();
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]).toLowerCase() === username.toLowerCase()) {
-      sheet.deleteRow(i + 1);
-      logAction_(actor, "Delete Payment", username, "");
-      return { success: true, deleted: username };
+  return withLock_(() => {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === username.toLowerCase()) {
+        sheet.deleteRow(i + 1);
+        logAction_(actor, "Delete Payment", username, "");
+        return { success: true, deleted: username };
+      }
     }
-  }
-  return { success: false, error: "Payment not found." };
+    return { success: false, error: "Payment not found." };
+  });
 }
 
 function adminUpdateSettings(p) {
@@ -1693,6 +1737,7 @@ function adminUpdateSettings(p) {
   const value = (p.value !== undefined) ? p.value : "";
   if (!key) return { success: false, error: "Setting key required." };
 
+  return withLock_(() => {
   const sheet = getSettingsSheet_();
   const data = sheet.getDataRange().getValues();
 
@@ -1706,6 +1751,7 @@ function adminUpdateSettings(p) {
   sheet.appendRow([key, value]);
   logAction_(actor, "Update Setting", key, "New value: " + value);
   return { success: true, key, value };
+  });
 }
 
 function adminUpdateSettingsBatch(p) {
@@ -1716,6 +1762,7 @@ function adminUpdateSettingsBatch(p) {
     return { success: false, error: "settings array required." };
   }
 
+  return withLock_(() => {
   const sheet = getSettingsSheet_();
   const data = sheet.getDataRange().getValues();
   const rowByKey = {};
@@ -1739,6 +1786,7 @@ function adminUpdateSettingsBatch(p) {
 
   logAction_(actor, "Update Settings (batch)", applied.join(", "), "");
   return { success: true, updated: applied };
+  });
 }
 
 function adminStats(p) {

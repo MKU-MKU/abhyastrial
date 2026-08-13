@@ -9,6 +9,21 @@
    functions into three separate <script> blocks.
    ═══════════════════════════════════════════════════════════════ */
 
+/**
+ * Escape a value for safe interpolation into onclick="...('${value}')"
+ * style attributes — i.e. inside an HTML double-quoted attribute that
+ * itself contains a JS single-quoted string literal. esc() alone isn't
+ * enough here: the browser HTML-decodes the attribute value BEFORE
+ * handing it to the JS parser, so a plain HTML-escaped `"` would still
+ * close the JS string wrapper (after decoding) even though it looks
+ * "escaped". This handles both layers in the right order.
+ */
+function escAttrJs(s) {
+  return String(s || '').replace(/[\\'"<>]/g, c => ({
+    '\\': '\\\\', "'": "\\'", '"': '&quot;', '<': '&lt;', '>': '&gt;'
+  }[c]));
+}
+
 /** HTML-escape a value for safe interpolation into innerHTML. */
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, m => ({

@@ -696,7 +696,7 @@ const ADMINS = {
           <div style="font-weight:600;font-size:.85rem">${esc(a.username)}${isMe ? ' <span style="opacity:.6;font-weight:400">(you)</span>' : ''}</div>
           <div style="font-size:.68rem;opacity:.6">Added ${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : '—'}${a.createdBy ? ' by ' + esc(a.createdBy) : ''}</div>
         </div>
-        ${isMe ? '' : `<button class="btn-s btn-r btn-sm" onclick="ADMINS.del('${a.username}')">🗑 Remove</button>`}
+        ${isMe ? '' : `<button class="btn-s btn-r btn-sm" onclick="ADMINS.del('${escAttrJs(a.username)}')">🗑 Remove</button>`}
       </div>`;
     }).join('');
   },
@@ -828,15 +828,15 @@ const USERS = {
       const checked = this.selected.has(u.username) ? 'checked' : '';
       return `<tr>
         <td><input type="checkbox" class="chk" ${checked} onchange="USERS.toggle('${u.username}')" aria-label="Select user ${esc(u.username)}"></td>
-        <td><div style="font-weight:600;color:var(--t1);cursor:pointer" onclick="USERS.view('${u.username}')">${esc(u.name)||u.username}</div><div class="mono" style="font-size:.68rem;color:var(--t3)">${u.username}</div></td>
+        <td><div style="font-weight:600;color:var(--t1);cursor:pointer" onclick="USERS.view('${escAttrJs(u.username)}')">${esc(u.name)||esc(u.username)}</div><div class="mono" style="font-size:.68rem;color:var(--t3)">${esc(u.username)}</div></td>
         <td><div style="font-size:.72rem">${esc(u.email)||'—'}</div><div style="font-size:.68rem;color:var(--t3)">${esc(u.mobile)||'—'}</div></td>
         <td><span class="badge ${badge}">${u.status}</span></td>
         <td class="mono" style="font-size:.68rem">${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
         <td style="font-size:.72rem">${access}</td>
         <td style="text-align:right">
-          <button class="btn-s btn-c btn-sm" onclick="USERS.view('${u.username}')" title="View Details">👁</button>
-          <button class="btn-s btn-a btn-sm" onclick="USERS.edit('${u.username}')" title="Edit User">✏️</button>
-          <button class="btn-s btn-r btn-sm" onclick="USERS.del('${u.username}')" title="Delete">🗑</button>
+          <button class="btn-s btn-c btn-sm" onclick="USERS.view('${escAttrJs(u.username)}')" title="View Details">👁</button>
+          <button class="btn-s btn-a btn-sm" onclick="USERS.edit('${escAttrJs(u.username)}')" title="Edit User">✏️</button>
+          <button class="btn-s btn-r btn-sm" onclick="USERS.del('${escAttrJs(u.username)}')" title="Delete">🗑</button>
         </td>
       </tr>`;
     }).join('');
@@ -903,13 +903,13 @@ const USERS = {
       <div style="background:var(--b0);border-radius:var(--r1);padding:.6rem;border:1px solid var(--b1);margin-bottom:.8rem">
         <div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:.4rem">Grant / Extend Access</div>
         <div style="display:flex;gap:.4rem">
-          <button class="btn-s btn-g" style="flex:1" onclick="USERS.grantAccess('${u.username}','permanent')">♾️ Grant Permanent</button>
-          <button class="btn-s btn-a" style="flex:1" onclick="USERS.grantAccess('${u.username}','year')">📅 Grant 1 Year</button>
+          <button class="btn-s btn-g" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','permanent')">♾️ Grant Permanent</button>
+          <button class="btn-s btn-a" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','year')">📅 Grant 1 Year</button>
         </div>
       </div>
       <div style="display:flex;gap:.4rem">
-        <button class="btn-s btn-a" onclick="MODAL.close('user'); USERS.edit('${u.username}')">✏️ Edit User</button>
-        <button class="btn-s btn-r" onclick="MODAL.close('user'); USERS.del('${u.username}')">🗑 Delete</button>
+        <button class="btn-s btn-a" onclick="MODAL.close('user'); USERS.edit('${escAttrJs(u.username)}')">✏️ Edit User</button>
+        <button class="btn-s btn-r" onclick="MODAL.close('user'); USERS.del('${escAttrJs(u.username)}')">🗑 Delete</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('user')">Close</button>
       </div>
     `;
@@ -936,7 +936,7 @@ const USERS = {
       <div class="sf"><label><input type="checkbox" id="edit-permanent" ${u.permanentAccess?'checked':''} style="accent-color:var(--amb);margin-right:.3rem"> Permanent Access</label></div>
       <div class="sf"><label for="edit-password">Reset Password (leave blank to keep)</label><input type="text" id="edit-password" placeholder="New password…"></div>
       <div style="display:flex;gap:.4rem;margin-top:.5rem">
-        <button class="btn-s btn-g" style="flex:1" onclick="USERS.saveEdit('${username}')">💾 Save Changes</button>
+        <button class="btn-s btn-g" style="flex:1" onclick="USERS.saveEdit('${escAttrJs(username)}')">💾 Save Changes</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('user')">Cancel</button>
       </div>
     `;
@@ -1032,8 +1032,8 @@ const PAYMENTS = {
         <td><span class="badge ${badge}">${p.status}</span></td>
         <td class="mono" style="font-size:.68rem">${p.submittedAt ? new Date(p.submittedAt).toLocaleDateString() : '—'}</td>
         <td style="text-align:right">
-          ${p.status==='pending' ? `<button class="btn-s btn-g btn-sm" onclick="PAYMENTS.review('${p.username}')">✓ Verify</button> <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.reject('${p.username}')">✕ Reject</button>` : '<span style="font-size:.68rem;color:var(--t3)">Reviewed</span>'}
-          <button class="btn-s btn-r btn-sm" style="margin-left:.2rem" onclick="PAYMENTS.del('${p.username}')">🗑</button>
+          ${p.status==='pending' ? `<button class="btn-s btn-g btn-sm" onclick="PAYMENTS.review('${escAttrJs(p.username)}')">✓ Verify</button> <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.reject('${escAttrJs(p.username)}')">✕ Reject</button>` : '<span style="font-size:.68rem;color:var(--t3)">Reviewed</span>'}
+          <button class="btn-s btn-r btn-sm" style="margin-left:.2rem" onclick="PAYMENTS.del('${escAttrJs(p.username)}')">🗑</button>
         </td>
       </tr>`;
     }).join('');
@@ -1152,7 +1152,7 @@ const MODAL = {
         </select>
       </div>` : ''}
       <div style="display:flex;gap:.4rem">
-        <button class="btn-s ${action==='verified'?'btn-g':'btn-r'}" style="flex:1" onclick="MODAL.confirmReview('${username}', '${action}')">${action==='verified'?'✓ Confirm Verify':'✕ Confirm Reject'}</button>
+        <button class="btn-s ${action==='verified'?'btn-g':'btn-r'}" style="flex:1" onclick="MODAL.confirmReview('${escAttrJs(username)}', '${action}')">${action==='verified'?'✓ Confirm Verify':'✕ Confirm Reject'}</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('review')">Cancel</button>
       </div>
     `;
