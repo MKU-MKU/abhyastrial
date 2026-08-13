@@ -21,7 +21,7 @@
   --c-deep:         #4A6A55;   /* deep forest green — brand graphic accent, hero/nav emphasis */
   --c-text:         #1A1A1A;   /* primary text — headings, row labels */
   --c-text-soft:    #5B5F5D;   /* secondary text — captions, helper copy (darkened from #8E8E93 for AA contrast on white) */
-  --c-text-faint:   #8E8E93;   /* tertiary text — placeholders, disabled, inactive nav icons */
+  --c-text-faint:   #6E6E74;   /* tertiary text — placeholders, disabled, inactive nav icons (darkened from #8E8E93 — that was 2.95:1 against --c-bg, failing WCAG AA even for large text; this is 4.59:1) */
   --c-bg:           #F2F4F3;   /* page canvas */
   --c-surface:      #FFFFFF;   /* card/panel surface */
   --c-divider:      #E7EAE8;   /* hairline borders, separators */
@@ -90,6 +90,28 @@
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* iOS Safari auto-zooms the viewport when a focused input's computed
+   font-size is under 16px — arguably the single most universally-hated
+   mobile text-input bug. Every input/select/textarea across all three
+   pages (login, signup, payment, admin edit forms, timetable, search
+   boxes) was set below that threshold by each page's own local styles.
+   Fixed once here rather than editing every page's form-control rules
+   individually — this only touches form controls, not the body type
+   scale, so it doesn't change how anything else looks. */
+input, select, textarea { font-size: max(16px, var(--fs-body)) !important; }
+
+/* Mobile Safari's 100vh includes the address bar, which shrinks/grows as
+   the person scrolls — causing full-height layouts to jump or clip at
+   the bottom. 100dvh (dynamic viewport height) tracks the actual visible
+   area instead. Listed after 100vh as a progressive enhancement: browsers
+   without dvh support simply ignore this line and keep the vh fallback
+   already set by each page. */
+body, #app { min-height: 100dvh; }
+
+/* Removes the ~300ms tap-response delay some mobile browsers still apply
+   to double-tap-to-zoom detection on interactive elements. */
+button, .btn, a[onclick], [role="button"] { touch-action: manipulation; }
 
 /* ── Cross-page resets ── */
 *,*::before,*::after{box-sizing:border-box}

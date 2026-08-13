@@ -20,7 +20,7 @@
   --ok:var(--grn);--ok-bg:rgba(46,125,79,.09);--ok-bd:rgba(46,125,79,.28);
   --bad:var(--ros);--bad-bg:rgba(193,67,60,.08);--bad-bd:rgba(193,67,60,.26);
   --warn:var(--amb);--warn-bg:rgba(46,139,87,.09);--warn-bd:rgba(46,139,87,.26);
-  --t1:#1A1A1A;--t2:#5B5F5D;--t3:#8E8E93;
+  --t1:var(--c-text);--t2:var(--c-text-soft);--t3:var(--c-text-faint);
   --ff:'Inter',system-ui,sans-serif;--fd:'Inter',system-ui,sans-serif;--fm:'JetBrains Mono',monospace;
   --r1:12px;--r2:16px;--r3:20px;--r4:22px;
   /* Neumorphic dual-tone elevation -- same system as index.html/user.html */
@@ -90,7 +90,7 @@ body{font-family:var(--ff);background:var(--c0);color:var(--t1);min-height:100vh
 }
 #ov{display:none;position:fixed;inset:0;z-index:399;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
 #ov.show{display:block}
-.sb-close{display:none;align-items:center;justify-content:center;width:28px;height:28px;margin:0 0 .5rem auto;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.8rem;cursor:pointer}
+.sb-close{display:none;align-items:center;justify-content:center;width:40px;height:40px;margin:0 0 .5rem auto;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.85rem;cursor:pointer}
 @media(max-width:900px){.sb-close{display:flex}}
 .sb-item{display:flex;align-items:center;gap:.55rem;padding:.4rem .5rem;border-radius:var(--r1);font-size:.78rem;font-weight:500;color:var(--t2);cursor:pointer;transition:all var(--ease);margin-bottom:.3rem;border:1px solid transparent}
 .sb-item:hover{background:var(--c2);color:var(--t1);box-shadow:var(--ne-sm)}
@@ -185,7 +185,7 @@ tr:last-child td{border-bottom:none}
 @keyframes mfade{from{opacity:0;transform:scale(.93) translateY(8px)}to{opacity:1;transform:none}}
 .mhd{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem .55rem;border-bottom:1px solid var(--b1)}
 .mhd h3{font-family:var(--fd);font-size:.88rem;font-weight:700}
-.mcl{background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:.8rem;transition:all var(--ease)}
+.mcl{background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:.9rem;transition:all var(--ease)}
 .mcl:hover{background:var(--bad-bg);color:var(--ros);border-color:var(--bad-bd)}
 .mbody{padding:.85rem 1rem}
 
@@ -511,7 +511,7 @@ const ADMIN = {
       this.creds = {user: u, token: res.adminToken, expires: Date.now() + 86400000};
       localStorage.setItem('abhyas_admin', JSON.stringify(this.creds));
       this.unlock();
-      this.toast('✅ Welcome to Admin World');
+      this.toast('✅ Signed in');
     } catch(e) { this.showErr(e.message || 'Login failed. Check connection.'); }
     this.setLoading(false);
   },
@@ -808,6 +808,12 @@ const USERS = {
     this.renderPage(this._visibleRows());
   },
 
+  clearFilters() {
+    document.getElementById('u-search').value = '';
+    document.getElementById('u-filter').value = 'all';
+    this.filter();
+  },
+
   render() { this.filter(); },
 
   renderPage(rows) {
@@ -818,7 +824,10 @@ const USERS = {
     const pageRows = rows.slice(start, start + perPage);
     const tb = document.getElementById('users-body');
     if (!pageRows.length) { 
-      tb.innerHTML = '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No users found</p></td></tr>'; 
+      const isFiltered = ADMIN.data.users.length > 0;
+      tb.innerHTML = isFiltered
+        ? '<tr><td colspan="7" class="empty"><div class="empty-i">🔍</div><p>No users match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="USERS.clearFilters()">Clear filters</button></td></tr>'
+        : '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No users yet</p></td></tr>'; 
       document.getElementById('u-pg').innerHTML = '';
       return; 
     }
@@ -1007,6 +1016,12 @@ const PAYMENTS = {
     this.updateBulkBar();
   },
 
+  clearFilters() {
+    document.getElementById('p-search').value = '';
+    document.getElementById('p-filter').value = 'all';
+    this.filter();
+  },
+
   render() { this.filter(); },
 
   renderPage(rows) {
@@ -1017,7 +1032,10 @@ const PAYMENTS = {
     const pageRows = rows.slice(start, start + perPage);
     const tb = document.getElementById('payments-body');
     if (!pageRows.length) { 
-      tb.innerHTML = '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No payments found</p></td></tr>'; 
+      const isFiltered = ADMIN.data.payments.length > 0;
+      tb.innerHTML = isFiltered
+        ? '<tr><td colspan="7" class="empty"><div class="empty-i">🔍</div><p>No payments match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="PAYMENTS.clearFilters()">Clear filters</button></td></tr>'
+        : '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No payments yet</p></td></tr>'; 
       document.getElementById('p-pg').innerHTML = '';
       return; 
     }
