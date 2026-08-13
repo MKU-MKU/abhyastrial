@@ -91,7 +91,7 @@ There is no traditional database — **Google Sheets is the database** (Users, P
 | **`admin.html`** | **Admin panel.** List/search users, approve or reject pending payments, edit global settings (payment amount, QR image, contact info, instructions), view usage stats, manage admin accounts, view an audit log, and change the admin password. Fully self-contained with its own login gate (`abhyas_admin`), independent of `index.html`'s session. Talks directly to `CODE.GS`. |
 | **`CODE.GS`** | **Backend — Google Apps Script.** A single script handling every `?action=...` request from all three pages: authentication, signup, session checks, progress sync, payment submission/review, settings, question-file proxying, and the full admin action set. Manages Google Sheets (`Users`, `Payments`, `Settings`, `Logs`, `Admins`, `Progress`) and reads/writes Google Drive for question files and payment screenshots. |
 | **`manifest.json`** | **PWA manifest** — app name, icons, theme colors, start URL, display mode. Lets the app be "installed" to a phone or desktop home screen. Referenced from `user.html`'s `<link rel="manifest">`. |
-| **`sw.js`** | **Service worker.** Caches the app shell for offline use (stale-while-revalidate) and Drive/API responses (network-first with an offline fallback). Registered by `PWA.init()` in `app.js`. It does **not** currently handle push or local notifications — see [Known gaps](#7-known-gaps--roadmap). |
+| **`sw.js`** | **Service worker.** Caches the app shell for offline use (stale-while-revalidate) and Drive/API responses (network-first with an offline fallback). Registered by `PWA.init()` in `app.js`. Also handles clicks on timetable-reminder notifications (focuses/opens the app). It does **not** handle server-sent push notifications — see [Known gaps](#10-known-gaps--roadmap). |
 | **`icon-192.png` / `icon-512.png`** | App icons used by the PWA manifest for home-screen/install icons at two resolutions. |
 
 ### Quick "which file do I touch?" guide
@@ -252,7 +252,7 @@ The backend is a **single Google Apps Script Web App** exposing everything throu
 
 ## 10. Known gaps / roadmap
 
-- **No timetable alarm or notification system.** The Timetable feature (add/view weekly study sessions) works fully, but nothing fires a reminder at the scheduled time — `sw.js` has no notification handling, and `app.js` has no `Notification`/alarm-scheduling code. Building this would require the Notifications API plus either a scheduled check inside the service worker or a `setTimeout`-based approach while the tab is open.
+- **Timetable reminders only work while the app is open.** `TT` (in `app.js`) can now notify a configurable number of minutes before each scheduled session, via `Notification`/`ServiceWorkerRegistration.showNotification()`, with a toggle and lead-time setting on the Timetable page. This fires as long as Abhyas is open in a tab or running as an installed PWA — closing the browser entirely stops it, same as any other in-page timer. True background delivery (reminders even when the browser/PWA isn't running at all) needs **server-side Web Push**: a VAPID key pair, the browser's push subscription stored server-side, and `CODE.gs` (or a separate worker) waking up on a schedule to send pushes — a materially bigger backend feature than this app currently has, not something to bolt on casually.
 
 ---
 

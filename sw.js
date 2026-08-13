@@ -95,6 +95,19 @@ self.addEventListener('message', e => {
   }
 });
 
+/* Tapping a timetable reminder focuses an already-open Abhyas tab if
+   there is one, otherwise opens user.html in a new one. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clientsList) {
+      if (client.url.includes('user.html') && 'focus' in client) return client.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow('./user.html');
+  })());
+});
+
 /* ----- FETCH: network-first with cache fallback, admin bypassed ----- */
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);

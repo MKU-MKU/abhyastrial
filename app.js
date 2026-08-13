@@ -15,7 +15,7 @@ const SR_INTERVALS = [1, 3, 7, 14]; // days for spaced repetition
 const LS = {
   USER:'abhyas_session',
   PROG:'abhyas_prog', BK:'abhyas_bk', FL:'abhyas_fl', WR:'abhyas_wr',
-  QC:'abhyas_qc_', TT:'abhyas_tt', STK:'abhyas_stk',
+  QC:'abhyas_qc_', TT:'abhyas_tt', TT_NOTIFIED:'abhyas_tt_notified', STK:'abhyas_stk',
   FORCED_OFFLINE:'abhyas_forced_off',
   EXAM_SNAP:'abhyas_exam_snap',
   FCOUNT:'abhyas_fcount',
@@ -35,7 +35,7 @@ const S = {
   fl: _load(LS.FL, []),
   wr: _load(LS.WR, []),
   prog: _load(LS.PROG, {total:0,correct:0,sessions:[]}),
-  tt: _load(LS.TT, {sessions:[]}),
+  tt: _load(LS.TT, {sessions:[], reminders:{enabled:false, leadMinutes:5}}),
   stk: _load(LS.STK, {days:[],last:''}),
   fcount: _load(LS.FCOUNT, {}),
   dpi: null,
@@ -44,6 +44,11 @@ const S = {
   cloud: _load(LS.CLOUD, {fid:''}),
   profile: _load(LS.PROFILE, {ver:1, id:''})   // unique user ID
 };
+// Existing saved S.tt (from before the reminders feature existed) won't
+// have a .reminders field — _load() returns saved data as-is, it doesn't
+// deep-merge against the default above. Guard it explicitly rather than
+// relying on every reader to optional-chain.
+if(!S.tt.reminders) S.tt.reminders = {enabled:false, leadMinutes:5};
 
 /* ═══════════════ 3. UTILITIES ═══════════════ */
 function _load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
@@ -342,6 +347,7 @@ const AUTH = {
     APP.init();
     TUTORIAL.maybeAutoOpen(user);
     PSYNC.pullIfEmpty();
+    TT._startReminderChecker();
   },
   _updateSidebarCard(user){
     const nameEl = document.getElementById('sb-uname');
@@ -2008,8 +2014,116 @@ const TT = {
     _save(LS.TT, S.tt);
     TT.render();
   },
+
+  /* ── Session reminders ─────────────────────────────────────────
+     Notifies a configurable number of minutes before each scheduled
+     session starts, while this tab/PWA is open. This is NOT push
+     notifications — closing the browser/PWA stops reminders, same as
+     any setInterval-based in-page feature. True background delivery
+     needs server-side Web Push (a VAPID key pair + a subscription
+     store on the backend), which is a materially bigger feature than
+     this app's Apps Script backend currently supports — noted here
+     rather than silently pretending this covers that case. */
+  _reminderTimer:null,
+  _notifiedToday:null,   // Set of `${dateStr}_${sessionId}` already notified
+
+  async toggleReminders(enabled){
+    if(enabled){
+      if(!('Notification' in window)){
+        toast('❌ Notifications aren\'t supported in this browser');
+        document.getElementById('tt-remind-toggle').checked = false;
+        return;
+      }
+      let perm = Notification.permission;
+      if(perm === 'default') perm = await Notification.requestPermission();
+      if(perm !== 'granted'){
+        toast('❌ Notifications blocked — enable them in your browser/site settings');
+        document.getElementById('tt-remind-toggle').checked = false;
+        return;
+      }
+    }
+    S.tt.reminders.enabled = enabled;
+    _save(LS.TT, S.tt);
+    TT._startReminderChecker();
+    toast(enabled ? '🔔 Reminders on' : '🔕 Reminders off');
+  },
+
+  setLeadMinutes(mins){
+    const n = Math.max(0, Math.min(60, Number(mins)||0));
+    S.tt.reminders.leadMinutes = n;
+    _save(LS.TT, S.tt);
+  },
+
+  _startReminderChecker(){
+    if(TT._reminderTimer) clearInterval(TT._reminderTimer);
+    if(!S.tt.reminders.enabled) return;
+    TT._loadNotifiedToday();
+    TT._checkReminders(); // catch anything due right now, then poll
+    TT._reminderTimer = setInterval(TT._checkReminders, 20000);
+  },
+
+  _todayKey(){ return new Date().toISOString().slice(0,10); },
+
+  _loadNotifiedToday(){
+    const saved = _load(LS.TT_NOTIFIED, {date:'', ids:[]});
+    TT._notifiedToday = (saved.date === TT._todayKey()) ? new Set(saved.ids) : new Set();
+  },
+
+  _saveNotifiedToday(){
+    _save(LS.TT_NOTIFIED, {date: TT._todayKey(), ids:[...TT._notifiedToday]});
+  },
+
+  async _checkReminders(){
+    if(!S.tt.reminders.enabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+    if(!TT._notifiedToday || TT._notifiedToday.size === undefined) TT._loadNotifiedToday();
+    const now = new Date();
+    const todayKey = TT._todayKey();
+    if(TT._lastCheckedDay !== todayKey){ TT._lastCheckedDay = todayKey; TT._loadNotifiedToday(); }
+
+    const lead = S.tt.reminders.leadMinutes || 0;
+    const nowMs = now.getTime();
+    const todayDay = now.getDay();
+
+    for(const s of S.tt.sessions){
+      if(s.day !== todayDay) continue;
+      const dedupKey = `${todayKey}_${s.id}`;
+      if(TT._notifiedToday.has(dedupKey)) continue;
+      const [h,m] = s.start.split(':').map(Number);
+      const startMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m).getTime();
+      const fireAt = startMs - lead*60000;
+      // Fire once we've reached the trigger time, but skip sessions
+      // whose start already passed more than a few minutes ago (e.g.
+      // the tab was closed/asleep through it) — a late reminder for a
+      // session that already ended is just noise.
+      if(nowMs >= fireAt && nowMs < startMs + 5*60000){
+        TT._fireReminder(s, lead);
+        TT._notifiedToday.add(dedupKey);
+        TT._saveNotifiedToday();
+      }
+    }
+  },
+
+  async _fireReminder(s, lead){
+    const title = lead > 0 ? `Starting in ${lead} min: ${s.name}` : `Now: ${s.name}`;
+    const body = `${s.start}–${s.end}`;
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.ready){
+        const reg = await navigator.serviceWorker.ready;
+        reg.showNotification(title, { body, icon:'./icon-192.png', tag:'tt-'+s.id });
+      } else {
+        new Notification(title, { body, icon:'./icon-192.png' });
+      }
+    }catch(e){ /* notification failures are non-fatal — the app keeps working either way */ }
+  },
+  /* ────────────────────────────────────────────────────────────── */
+
   _clockTimer:null,
   render(){
+    const remindToggle = document.getElementById('tt-remind-toggle');
+    const remindLead = document.getElementById('tt-remind-lead');
+    if(remindToggle) remindToggle.checked = !!S.tt.reminders.enabled;
+    if(remindLead) remindLead.value = S.tt.reminders.leadMinutes ?? 5;
+    TT._startReminderChecker();
     if(TT._clockTimer) clearInterval(TT._clockTimer);
     const tick=()=>{
       const now=new Date();
@@ -2095,7 +2209,7 @@ const TT = {
       r.onload=e=>{
         try{
           const data=JSON.parse(e.target.result);
-          if(data && Array.isArray(data.sessions)){ S.tt=data; _save(LS.TT,S.tt); TT.render(); toast('✅ Timetable imported'); }
+          if(data && Array.isArray(data.sessions)){ S.tt=data; if(!S.tt.reminders) S.tt.reminders={enabled:false, leadMinutes:5}; _save(LS.TT,S.tt); TT.render(); toast('✅ Timetable imported'); }
           else toast('❌ Invalid timetable file');
         }catch{toast('❌ Invalid JSON')}
       };
@@ -2232,7 +2346,7 @@ const DATA = {
           if(data.bk){ S.bk=data.bk; _save(LS.BK,S.bk); }
           if(data.fl){ S.fl=data.fl; _save(LS.FL,S.fl); }
           if(data.wr){ S.wr=data.wr; _save(LS.WR,S.wr); }
-          if(data.tt){ S.tt=data.tt; _save(LS.TT,S.tt); }
+          if(data.tt){ S.tt=data.tt; if(!S.tt.reminders) S.tt.reminders={enabled:false, leadMinutes:5}; _save(LS.TT,S.tt); }
           if(data.stk){ S.stk=data.stk; _save(LS.STK,S.stk); }
           toast('✅ Data imported');
           HOME.render(); PROG.render();

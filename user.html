@@ -674,6 +674,17 @@ input[type=file]:hover{border-color:var(--amb)}
             </div><div id="tt-today"></div></div>
           </div>
           <div>
+            <div class="card"><div class="card-hd"><h3>🔔 Reminders</h3></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
+                <label for="tt-remind-toggle" style="font-size:.78rem;color:var(--t2);cursor:pointer">Notify before each session</label>
+                <input type="checkbox" id="tt-remind-toggle" onchange="TT.toggleReminders(this.checked)" style="width:1.15rem;height:1.15rem;accent-color:var(--amb);cursor:pointer">
+              </div>
+              <div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0">
+                <label for="tt-remind-lead" style="font-size:.72rem;color:var(--t3);white-space:nowrap">Minutes before:</label>
+                <input type="number" id="tt-remind-lead" min="0" max="60" style="width:4.5rem" onchange="TT.setLeadMinutes(this.value)">
+              </div>
+              <p style="font-size:.65rem;color:var(--t3);margin:.4rem 0 0">Works while Abhyas is open in a tab or installed as an app. Closing the browser fully will stop reminders.</p>
+            </div>
             <div class="card"><div class="card-hd"><h3>Add Session</h3><span class="ctag tg">New</span></div>
               <div class="tt-form">
                 <select id="tt-day" aria-label="Day of week"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select>
