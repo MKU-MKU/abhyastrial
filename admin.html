@@ -4,11 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#F2F4F3">
-<title>Abhyas — Admin World</title>
+<title>Abhyas — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
 <link rel="stylesheet" href="design-system.css">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
+/* Phosphor renders as an icon font: size follows font-size, color follows
+   `color`, so it drops into existing button/nav/badge styles without any
+   extra markup. This just fixes the icon's own vertical alignment — icon
+   fonts sit slightly high relative to a text baseline by default.
+   Scoped to i.ph specifically — this codebase already uses a bare .ph
+   class for unrelated "page header" wrapper divs, so an unscoped .ph{}
+   rule here would've collided with those. */
+i.ph{vertical-align:-0.125em;line-height:1}
 :root{
   --c0:#F2F4F3;--c1:#EBEEEC;--c2:#FFFFFF;--c3:#FFFFFF;--c4:#E4EFE8;--c5:#E7EAE8;
   --b0:rgba(26,26,26,.035);--b1:#E7EAE8;--b2:rgba(26,26,26,.11);
@@ -272,7 +281,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
   <!-- TOPBAR -->
   <div id="tb">
     <div style="display:flex;align-items:center;gap:.5rem">
-      <button class="tb-btn" id="menu-btn" onclick="UI.sidebarOpen()" title="Menu">☰</button>
+      <button class="tb-btn" id="menu-btn" onclick="UI.sidebarOpen()" title="Menu"><i class="ph ph-list"></i></button>
       <div class="tb-brand" onclick="UI.nav('dashboard')">
         <div class="mark"><img src="icon-192.png" alt="Abhyas"></div>
         <span style="font-family:var(--fd);font-size:.9rem;font-weight:700">Admin World</span>
@@ -280,8 +289,8 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
     </div>
     <div class="tb-r">
       <div style="font-size:.68rem;color:var(--t3);font-weight:600;margin-right:.4rem" id="admin-name">admin</div>
-      <button class="tb-btn" onclick="ADMIN.refresh()" title="Refresh">🔄</button>
-      <button class="tb-btn" onclick="UI.nav('logs')" title="Activity Logs">📋</button>
+      <button class="tb-btn" onclick="ADMIN.refresh()" title="Refresh"><i class="ph ph-arrow-clockwise"></i></button>
+      <button class="tb-btn" onclick="UI.nav('logs')" title="Activity Logs"><i class="ph ph-clipboard-text"></i></button>
       <button class="tb-btn danger" onclick="ADMIN.logout()" title="Logout">⏻</button>
     </div>
   </div>
@@ -289,22 +298,22 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
   <div id="layout">
     <div id="ov" onclick="UI.sidebarClose()"></div>
     <div id="sb">
-      <button class="sb-close" onclick="UI.sidebarClose()" aria-label="Close menu">✕</button>
+      <button class="sb-close" onclick="UI.sidebarClose()" aria-label="Close menu"><i class="ph ph-x"></i></button>
       <div class="sb-lbl">Menu</div>
-      <div class="sb-item active" id="nav-dashboard" onclick="UI.nav('dashboard')"><div class="sb-ic">📊</div>Dashboard</div>
-      <div class="sb-item" id="nav-users" onclick="UI.nav('users')"><div class="sb-ic">👤</div>Users</div>
-      <div class="sb-item" id="nav-payments" onclick="UI.nav('payments')"><div class="sb-ic">💳</div>Payments</div>
-      <div class="sb-item" id="nav-logs" onclick="UI.nav('logs')"><div class="sb-ic">📋</div>Activity Logs</div>
-      <div class="sb-item" id="nav-settings" onclick="UI.nav('settings')"><div class="sb-ic">⚙️</div>Settings</div>
+      <div class="sb-item active" id="nav-dashboard" onclick="UI.nav('dashboard')"><div class="sb-ic"><i class="ph ph-chart-bar"></i></div>Dashboard</div>
+      <div class="sb-item" id="nav-users" onclick="UI.nav('users')"><div class="sb-ic"><i class="ph ph-user"></i></div>Users</div>
+      <div class="sb-item" id="nav-payments" onclick="UI.nav('payments')"><div class="sb-ic"><i class="ph ph-credit-card"></i></div>Payments</div>
+      <div class="sb-item" id="nav-logs" onclick="UI.nav('logs')"><div class="sb-ic"><i class="ph ph-clipboard-text"></i></div>Activity Logs</div>
+      <div class="sb-item" id="nav-settings" onclick="UI.nav('settings')"><div class="sb-ic"><i class="ph ph-gear"></i></div>Settings</div>
       <div class="sb-div"></div>
-      <div class="sb-item" onclick="localStorage.removeItem('abhyas_admin'); localStorage.removeItem('abhyas_session'); location.href='index.html'"><div class="sb-ic">🏠</div>User Portal</div>
+      <div class="sb-item" onclick="localStorage.removeItem('abhyas_admin'); localStorage.removeItem('abhyas_session'); location.href='index.html'"><div class="sb-ic"><i class="ph ph-house"></i></div>User Portal</div>
       <div style="text-align:center;font-size:.62rem;color:var(--t3);opacity:.6;padding:.6rem 0 .2rem">Abhyas V1</div>
     </div>
 
     <div id="main">
       <!-- DASHBOARD -->
       <div class="view on" id="view-dashboard">
-        <div class="ph"><h2>📊 Dashboard</h2><p>Overview of your study platform</p></div>
+        <div class="ph"><h2><i class="ph ph-chart-bar"></i> Dashboard</h2><p>Overview of your study platform</p></div>
         <div class="stats-grid" id="dash-stats">
           <div class="stat-card c-vio" onclick="UI.nav('users')"><div class="stat-v" id="st-users">0</div><div class="stat-l">Total Users</div></div>
           <div class="stat-card c-sky" onclick="USERS.filterBy('trial')"><div class="stat-v" id="st-trial">0</div><div class="stat-l">Trial Users</div></div>
@@ -316,23 +325,23 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
           <div class="stat-card c-ros" onclick="PAYMENTS.filterBy('rejected')"><div class="stat-v" id="st-rejected">0</div><div class="stat-l">Rejected</div></div>
         </div>
         <div class="card">
-          <div class="card-hd"><h3>⚡ Quick Actions</h3></div>
+          <div class="card-hd"><h3><i class="ph ph-lightning"></i> Quick Actions</h3></div>
           <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-            <button class="btn-s btn-g" onclick="UI.nav('users')">👤 Manage Users</button>
-            <button class="btn-s btn-a" onclick="UI.nav('payments')">💳 Review Payments</button>
-            <button class="btn-s btn-p" onclick="UI.nav('settings')">⚙️ Edit Settings</button>
-            <button class="btn-s btn-c" onclick="ADMIN.exportUsers()">📥 Export Users CSV</button>
-            <button class="btn-s btn-c" onclick="ADMIN.exportPayments()">📥 Export Payments CSV</button>
-            <button class="btn-s btn-r" onclick="ADMIN.changePassword()">🔐 Change Password</button>
+            <button class="btn-s btn-g" onclick="UI.nav('users')"><i class="ph ph-user"></i> Manage Users</button>
+            <button class="btn-s btn-a" onclick="UI.nav('payments')"><i class="ph ph-credit-card"></i> Review Payments</button>
+            <button class="btn-s btn-p" onclick="UI.nav('settings')"><i class="ph ph-gear"></i> Edit Settings</button>
+            <button class="btn-s btn-c" onclick="ADMIN.exportUsers()"><i class="ph ph-download-simple"></i> Export Users CSV</button>
+            <button class="btn-s btn-c" onclick="ADMIN.exportPayments()"><i class="ph ph-download-simple"></i> Export Payments CSV</button>
+            <button class="btn-s btn-r" onclick="ADMIN.changePassword()"><i class="ph ph-lock-key"></i> Change Password</button>
           </div>
         </div>
       </div>
 
       <!-- USERS -->
       <div class="view" id="view-users">
-        <div class="ph"><h2>👤 Users</h2><p>Manage all registered accounts</p></div>
+        <div class="ph"><h2><i class="ph ph-user"></i> Users</h2><p>Manage all registered accounts</p></div>
         <div class="toolbar">
-          <input type="text" id="u-search" placeholder="🔍 Search username, name, email…" oninput="USERS.debouncedFilter()">
+          <input type="text" id="u-search" placeholder="Search username, name, email…" oninput="USERS.debouncedFilter()">
           <select id="u-filter" onchange="USERS.filter()" aria-label="Filter users">
             <option value="all">All Status</option>
             <option value="trial">Trial</option>
@@ -341,46 +350,46 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
             <option value="payment_pending">Pending Pay</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button class="btn-s btn-c" onclick="ADMIN.exportUsers()">📥 CSV</button>
+          <button class="btn-s btn-c" onclick="ADMIN.exportUsers()"><i class="ph ph-download-simple"></i> CSV</button>
         </div>
         <div class="tbl-wrap"><table id="users-tbl"><thead><tr>
           <th><input type="checkbox" class="chk" id="u-chk-all" onchange="USERS.toggleAll()" aria-label="Select all users"></th>
           <th>User</th><th>Contact</th><th>Status</th><th>Created</th><th>Access</th><th style="text-align:right">Actions</th>
-        </tr></thead><tbody id="users-body"><tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No users found</p></td></tr></tbody></table></div>
+        </tr></thead><tbody id="users-body"><tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-tray"></i></div><p>No users found</p></td></tr></tbody></table></div>
         <div class="pg" id="u-pg"></div>
       </div>
 
       <!-- PAYMENTS -->
       <div class="view" id="view-payments">
-        <div class="ph"><h2>💳 Payments</h2><p>Verify or reject payment submissions</p></div>
+        <div class="ph"><h2><i class="ph ph-credit-card"></i> Payments</h2><p>Verify or reject payment submissions</p></div>
         <div class="toolbar">
-          <input type="text" id="p-search" placeholder="🔍 Search username, TXN ID…" oninput="PAYMENTS.debouncedFilter()">
+          <input type="text" id="p-search" placeholder="Search username, TXN ID…" oninput="PAYMENTS.debouncedFilter()">
           <select id="p-filter" onchange="PAYMENTS.filter()" aria-label="Filter payments">
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
             <option value="verified">Verified</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button class="btn-s btn-c" onclick="ADMIN.exportPayments()">📥 CSV</button>
+          <button class="btn-s btn-c" onclick="ADMIN.exportPayments()"><i class="ph ph-download-simple"></i> CSV</button>
         </div>
         <div class="bulk-bar" id="p-bulk">
           <span id="p-bulk-count">0 selected</span>
-          <button class="btn-s btn-g btn-sm" onclick="PAYMENTS.bulkVerify()">✓ Verify All</button>
-          <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.bulkReject()">✕ Reject All</button>
+          <button class="btn-s btn-g btn-sm" onclick="PAYMENTS.bulkVerify()"><i class="ph ph-check"></i> Verify All</button>
+          <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.bulkReject()"><i class="ph ph-x"></i> Reject All</button>
           <button class="btn-s btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="PAYMENTS.clearSelection()">Clear</button>
         </div>
         <div class="tbl-wrap"><table id="payments-tbl"><thead><tr>
           <th><input type="checkbox" class="chk" id="p-chk-all" onchange="PAYMENTS.toggleAll()" aria-label="Select all payments"></th>
           <th>User</th><th>TXN ID</th><th>Amount</th><th>Status</th><th>Submitted</th><th style="text-align:right">Actions</th>
-        </tr></thead><tbody id="payments-body"><tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No payments found</p></td></tr></tbody></table></div>
+        </tr></thead><tbody id="payments-body"><tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-tray"></i></div><p>No payments found</p></td></tr></tbody></table></div>
         <div class="pg" id="p-pg"></div>
       </div>
 
       <!-- ACTIVITY LOGS -->
       <div class="view" id="view-logs">
-        <div class="ph"><h2>📋 Activity Logs</h2><p>Track all admin actions</p></div>
+        <div class="ph"><h2><i class="ph ph-clipboard-text"></i> Activity Logs</h2><p>Track all admin actions</p></div>
         <div class="toolbar">
-          <input type="text" id="l-search" placeholder="🔍 Search action, admin, target…" oninput="LOGS.filter()">
+          <input type="text" id="l-search" placeholder="Search action, admin, target…" oninput="LOGS.filter()">
           <select id="l-filter" onchange="LOGS.filter()" aria-label="Filter activity logs">
             <option value="all">All Actions</option>
             <option value="verify">Verified Payment</option>
@@ -392,7 +401,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
           </select>
         </div>
         <div class="card" id="logs-card">
-          <div class="empty" id="logs-empty"><div class="empty-i">📭</div><p>No activity logs</p></div>
+          <div class="empty" id="logs-empty"><div class="empty-i"><i class="ph ph-tray"></i></div><p>No activity logs</p></div>
           <div id="logs-list"></div>
         </div>
         <div class="pg" id="l-pg"></div>
@@ -400,7 +409,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 
       <!-- SETTINGS -->
       <div class="view" id="view-settings">
-        <div class="ph"><h2>⚙️ Settings</h2><p>Configure payment, QR, and app info</p></div>
+        <div class="ph"><h2><i class="ph ph-gear"></i> Settings</h2><p>Configure payment, QR, and app info</p></div>
         <div class="card">
           <div class="card-hd"><h3>Payment Configuration</h3></div>
           <div class="sf"><label for="set-name">App Name</label><input type="text" id="set-name" placeholder="Abhyas"></div>
@@ -419,8 +428,8 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
           <div class="sf"><label for="set-trial">Trial Hours</label><input type="number" id="set-trial" placeholder="24" min="1"></div>
           <hr>
           <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-            <button class="btn" style="width:auto;padding:.6rem 1.2rem" onclick="SETTINGS.save()">💾 Save Settings</button>
-            <button class="btn-s btn-r" onclick="ADMIN.changePassword()">🔐 Change My Password</button>
+            <button class="btn" style="width:auto;padding:.6rem 1.2rem" onclick="SETTINGS.save()"><i class="ph ph-floppy-disk"></i> Save Settings</button>
+            <button class="btn-s btn-r" onclick="ADMIN.changePassword()"><i class="ph ph-lock-key"></i> Change My Password</button>
           </div>
         </div>
 
@@ -431,7 +440,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
           <hr>
           <div class="sf"><label for="adm-new-user">New Admin Username</label><input type="text" id="adm-new-user" placeholder="letters, numbers, . _ - only"></div>
           <div class="sf"><label for="adm-new-pass">New Admin Password</label><input type="password" id="adm-new-pass" placeholder="Min 6 characters"></div>
-          <button class="btn-s btn-g" onclick="ADMINS.create()">➕ Add Admin</button>
+          <button class="btn-s btn-g" onclick="ADMINS.create()"><i class="ph ph-plus"></i> Add Admin</button>
         </div>
       </div>
     </div>
@@ -441,7 +450,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 <!-- REVIEW MODAL -->
 <div class="mbg" id="mbg-review" onclick="MODAL.close('review')">
   <div class="mbox" onclick="event.stopPropagation()">
-    <div class="mhd"><h3 id="mtitle-review">Review Payment</h3><button class="mcl" onclick="MODAL.close('review')" aria-label="Close dialog">✕</button></div>
+    <div class="mhd"><h3 id="mtitle-review">Review Payment</h3><button class="mcl" onclick="MODAL.close('review')" aria-label="Close dialog"><i class="ph ph-x"></i></button></div>
     <div class="mbody" id="mbody-review"></div>
   </div>
 </div>
@@ -449,7 +458,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 <!-- USER DETAIL MODAL -->
 <div class="mbg" id="mbg-user" onclick="MODAL.close('user')">
   <div class="mbox wide" onclick="event.stopPropagation()">
-    <div class="mhd"><h3 id="mtitle-user">User Details</h3><button class="mcl" onclick="MODAL.close('user')" aria-label="Close dialog">✕</button></div>
+    <div class="mhd"><h3 id="mtitle-user">User Details</h3><button class="mcl" onclick="MODAL.close('user')" aria-label="Close dialog"><i class="ph ph-x"></i></button></div>
     <div class="mbody" id="mbody-user"></div>
   </div>
 </div>
@@ -457,7 +466,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:.6rem 0}
 <!-- CHANGE PASSWORD MODAL -->
 <div class="mbg" id="mbg-pwd" onclick="MODAL.close('pwd')">
   <div class="mbox" onclick="event.stopPropagation()">
-    <div class="mhd"><h3>Change Admin Password</h3><button class="mcl" onclick="MODAL.close('pwd')" aria-label="Close dialog">✕</button></div>
+    <div class="mhd"><h3>Change Admin Password</h3><button class="mcl" onclick="MODAL.close('pwd')" aria-label="Close dialog"><i class="ph ph-x"></i></button></div>
     <div class="mbody">
       <div class="sf"><label for="pwd-current">Current Password</label><input type="password" id="pwd-current" placeholder="••••••••"></div>
       <div class="sf"><label for="pwd-new">New Password</label><input type="password" id="pwd-new" placeholder="Min 6 characters"></div>
@@ -696,7 +705,7 @@ const ADMINS = {
           <div style="font-weight:600;font-size:.85rem">${esc(a.username)}${isMe ? ' <span style="opacity:.6;font-weight:400">(you)</span>' : ''}</div>
           <div style="font-size:.68rem;opacity:.6">Added ${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : '—'}${a.createdBy ? ' by ' + esc(a.createdBy) : ''}</div>
         </div>
-        ${isMe ? '' : `<button class="btn-s btn-r btn-sm" onclick="ADMINS.del('${escAttrJs(a.username)}')">🗑 Remove</button>`}
+        ${isMe ? '' : `<button class="btn-s btn-r btn-sm" onclick="ADMINS.del('${escAttrJs(a.username)}')"><i class="ph ph-trash"></i> Remove</button>`}
       </div>`;
     }).join('');
   },
@@ -826,8 +835,8 @@ const USERS = {
     if (!pageRows.length) { 
       const isFiltered = ADMIN.data.users.length > 0;
       tb.innerHTML = isFiltered
-        ? '<tr><td colspan="7" class="empty"><div class="empty-i">🔍</div><p>No users match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="USERS.clearFilters()">Clear filters</button></td></tr>'
-        : '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No users yet</p></td></tr>'; 
+        ? '<tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-magnifying-glass"></i></div><p>No users match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="USERS.clearFilters()">Clear filters</button></td></tr>'
+        : '<tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-tray"></i></div><p>No users yet</p></td></tr>'; 
       document.getElementById('u-pg').innerHTML = '';
       return; 
     }
@@ -843,9 +852,9 @@ const USERS = {
         <td class="mono" style="font-size:.68rem">${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
         <td style="font-size:.72rem">${access}</td>
         <td style="text-align:right">
-          <button class="btn-s btn-c btn-sm" onclick="USERS.view('${escAttrJs(u.username)}')" title="View Details">👁</button>
-          <button class="btn-s btn-a btn-sm" onclick="USERS.edit('${escAttrJs(u.username)}')" title="Edit User">✏️</button>
-          <button class="btn-s btn-r btn-sm" onclick="USERS.del('${escAttrJs(u.username)}')" title="Delete">🗑</button>
+          <button class="btn-s btn-c btn-sm" onclick="USERS.view('${escAttrJs(u.username)}')" title="View Details"><i class="ph ph-eye"></i></button>
+          <button class="btn-s btn-a btn-sm" onclick="USERS.edit('${escAttrJs(u.username)}')" title="Edit User"><i class="ph ph-pencil-simple"></i></button>
+          <button class="btn-s btn-r btn-sm" onclick="USERS.del('${escAttrJs(u.username)}')" title="Delete"><i class="ph ph-trash"></i></button>
         </td>
       </tr>`;
     }).join('');
@@ -912,13 +921,13 @@ const USERS = {
       <div style="background:var(--b0);border-radius:var(--r1);padding:.6rem;border:1px solid var(--b1);margin-bottom:.8rem">
         <div style="font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:.4rem">Grant / Extend Access</div>
         <div style="display:flex;gap:.4rem">
-          <button class="btn-s btn-g" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','permanent')">♾️ Grant Permanent</button>
-          <button class="btn-s btn-a" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','year')">📅 Grant 1 Year</button>
+          <button class="btn-s btn-g" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','permanent')"><i class="ph ph-infinity"></i> Grant Permanent</button>
+          <button class="btn-s btn-a" style="flex:1" onclick="USERS.grantAccess('${escAttrJs(u.username)}','year')"><i class="ph ph-calendar-blank"></i> Grant 1 Year</button>
         </div>
       </div>
       <div style="display:flex;gap:.4rem">
-        <button class="btn-s btn-a" onclick="MODAL.close('user'); USERS.edit('${escAttrJs(u.username)}')">✏️ Edit User</button>
-        <button class="btn-s btn-r" onclick="MODAL.close('user'); USERS.del('${escAttrJs(u.username)}')">🗑 Delete</button>
+        <button class="btn-s btn-a" onclick="MODAL.close('user'); USERS.edit('${escAttrJs(u.username)}')"><i class="ph ph-pencil-simple"></i> Edit User</button>
+        <button class="btn-s btn-r" onclick="MODAL.close('user'); USERS.del('${escAttrJs(u.username)}')"><i class="ph ph-trash"></i> Delete</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('user')">Close</button>
       </div>
     `;
@@ -945,7 +954,7 @@ const USERS = {
       <div class="sf"><label><input type="checkbox" id="edit-permanent" ${u.permanentAccess?'checked':''} style="accent-color:var(--amb);margin-right:.3rem"> Permanent Access</label></div>
       <div class="sf"><label for="edit-password">Reset Password (leave blank to keep)</label><input type="text" id="edit-password" placeholder="New password…"></div>
       <div style="display:flex;gap:.4rem;margin-top:.5rem">
-        <button class="btn-s btn-g" style="flex:1" onclick="USERS.saveEdit('${escAttrJs(username)}')">💾 Save Changes</button>
+        <button class="btn-s btn-g" style="flex:1" onclick="USERS.saveEdit('${escAttrJs(username)}')"><i class="ph ph-floppy-disk"></i> Save Changes</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('user')">Cancel</button>
       </div>
     `;
@@ -1034,8 +1043,8 @@ const PAYMENTS = {
     if (!pageRows.length) { 
       const isFiltered = ADMIN.data.payments.length > 0;
       tb.innerHTML = isFiltered
-        ? '<tr><td colspan="7" class="empty"><div class="empty-i">🔍</div><p>No payments match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="PAYMENTS.clearFilters()">Clear filters</button></td></tr>'
-        : '<tr><td colspan="7" class="empty"><div class="empty-i">📭</div><p>No payments yet</p></td></tr>'; 
+        ? '<tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-magnifying-glass"></i></div><p>No payments match your search/filter</p><button class="btn-s btn-a btn-sm" onclick="PAYMENTS.clearFilters()">Clear filters</button></td></tr>'
+        : '<tr><td colspan="7" class="empty"><div class="empty-i"><i class="ph ph-tray"></i></div><p>No payments yet</p></td></tr>'; 
       document.getElementById('p-pg').innerHTML = '';
       return; 
     }
@@ -1045,13 +1054,13 @@ const PAYMENTS = {
       return `<tr>
         <td><input type="checkbox" class="chk" ${checked} onchange="PAYMENTS.toggle('${p.username}')" aria-label="Select payment from ${esc(p.username)}"></td>
         <td><div style="font-weight:600;color:var(--t1)">${esc(p.name)||p.username}</div><div class="mono" style="font-size:.68rem;color:var(--t3)">${p.username}</div></td>
-        <td class="mono">${esc(p.txId)}${p.duplicateTxId ? ` <span title="Also submitted by: ${esc(p.duplicateTxIdUsers.join(', '))}" style="color:var(--warn,#f5a623);cursor:help">⚠️</span>` : ''}</td>
+        <td class="mono">${esc(p.txId)}${p.duplicateTxId ? ` <span title="Also submitted by: ${esc(p.duplicateTxIdUsers.join(', '))}" style="color:var(--warn,#f5a623);cursor:help"><i class="ph ph-warning"></i></span>` : ''}</td>
         <td style="font-size:.72rem">Rs ${ADMIN.data.settings.paymentAmount||'100'}</td>
         <td><span class="badge ${badge}">${p.status}</span></td>
         <td class="mono" style="font-size:.68rem">${p.submittedAt ? new Date(p.submittedAt).toLocaleDateString() : '—'}</td>
         <td style="text-align:right">
-          ${p.status==='pending' ? `<button class="btn-s btn-g btn-sm" onclick="PAYMENTS.review('${escAttrJs(p.username)}')">✓ Verify</button> <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.reject('${escAttrJs(p.username)}')">✕ Reject</button>` : '<span style="font-size:.68rem;color:var(--t3)">Reviewed</span>'}
-          <button class="btn-s btn-r btn-sm" style="margin-left:.2rem" onclick="PAYMENTS.del('${escAttrJs(p.username)}')">🗑</button>
+          ${p.status==='pending' ? `<button class="btn-s btn-g btn-sm" onclick="PAYMENTS.review('${escAttrJs(p.username)}')"><i class="ph ph-check"></i> Verify</button> <button class="btn-s btn-r btn-sm" onclick="PAYMENTS.reject('${escAttrJs(p.username)}')"><i class="ph ph-x"></i> Reject</button>` : '<span style="font-size:.68rem;color:var(--t3)">Reviewed</span>'}
+          <button class="btn-s btn-r btn-sm" style="margin-left:.2rem" onclick="PAYMENTS.del('${escAttrJs(p.username)}')"><i class="ph ph-trash"></i></button>
         </td>
       </tr>`;
     }).join('');
@@ -1148,7 +1157,7 @@ const MODAL = {
     const title = action==='verified' ? 'Verify Payment' : 'Reject Payment';
     document.getElementById('mtitle-review').textContent = title;
     document.getElementById('mbody-review').innerHTML = `
-      ${p.duplicateTxId ? `<div style="background:rgba(54,139,79,.12);border:1px solid rgba(54,139,79,.4);border-radius:var(--r1);padding:.6rem;margin-bottom:.8rem;font-size:.78rem;color:var(--warn,#f5a623)">⚠️ This transaction ID was also submitted by: <strong>${esc(p.duplicateTxIdUsers.join(', '))}</strong>. Double-check the screenshot before approving.</div>` : ''}
+      ${p.duplicateTxId ? `<div style="background:rgba(54,139,79,.12);border:1px solid rgba(54,139,79,.4);border-radius:var(--r1);padding:.6rem;margin-bottom:.8rem;font-size:.78rem;color:var(--warn,#f5a623)"><i class="ph ph-warning"></i> This transaction ID was also submitted by: <strong>${esc(p.duplicateTxIdUsers.join(', '))}</strong>. Double-check the screenshot before approving.</div>` : ''}
       <div style="margin-bottom:.8rem">
         <div style="font-size:.78rem;color:var(--t3);margin-bottom:.15rem">User</div>
         <div style="font-weight:600">${esc(p.name)||p.username} <span class="mono" style="font-size:.72rem;color:var(--t3)">(${p.username})</span></div>
@@ -1165,12 +1174,12 @@ const MODAL = {
       ${action==='rejected' ? `<div class="sf" style="margin-bottom:.8rem"><label for="rej-reason">Rejection Reason</label><input type="text" id="rej-reason" placeholder="Why are you rejecting this payment?"></div>` : ''}
       ${action==='verified' ? `<div class="sf" style="margin-bottom:.8rem"><label for="grant-duration">Grant Duration</label>
         <select id="grant-duration">
-          <option value="permanent">♾️ Permanent</option>
+          <option value="permanent">♾ Permanent</option>
           <option value="year">📅 1 Year</option>
         </select>
       </div>` : ''}
       <div style="display:flex;gap:.4rem">
-        <button class="btn-s ${action==='verified'?'btn-g':'btn-r'}" style="flex:1" onclick="MODAL.confirmReview('${escAttrJs(username)}', '${action}')">${action==='verified'?'✓ Confirm Verify':'✕ Confirm Reject'}</button>
+        <button class="btn-s ${action==='verified'?'btn-g':'btn-r'}" style="flex:1" onclick="MODAL.confirmReview('${escAttrJs(username)}', '${action}')">${action==='verified'?'<i class="ph ph-check"></i> Confirm Verify':'<i class="ph ph-x"></i> Confirm Reject'}</button>
         <button class="btn-s" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="MODAL.close('review')">Cancel</button>
       </div>
     `;
@@ -1182,7 +1191,7 @@ const MODAL = {
     const duration = document.getElementById('grant-duration')?.value || 'permanent';
     if (status === 'verified') {
       const p = ADMIN.data.payments.find(x => x.username === username);
-      // The ⚠️ duplicate-TXN-ID badge was previously cosmetic — approving
+      // The duplicate-TXN-ID warning badge was previously cosmetic — approving
       // still went through identically either way. Now it actually stops
       // the one-click path and makes the admin confirm they've checked it.
       if (p && p.duplicateTxId && !confirm(
