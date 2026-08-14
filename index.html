@@ -40,6 +40,26 @@ body{font-family:var(--ff);background:var(--c-bg);color:var(--t1);min-height:100
 .logo h1{font-size:var(--fs-page-title);font-weight:var(--fw-bold);letter-spacing:-.3px;color:var(--c-text)}
 .logo p{font-size:var(--fs-caption);color:var(--c-text-soft);margin-top:.25rem;font-weight:var(--fw-medium)}
 
+/* "Your path to mastery" made literal: a small ascending trail of
+   waypoints under the wordmark, the last one styled as the destination.
+   Kept deliberately small and quiet — this is a login form people want
+   to get through quickly, not a hero banner to admire. */
+.path-motif{display:block;width:148px;height:auto;margin:.55rem auto .05rem}
+.path-motif-peak{animation:path-peak-pulse 2.8s ease-in-out infinite}
+@keyframes path-peak-pulse{
+  0%,100%{filter:drop-shadow(0 0 0 var(--c-primary))}
+  50%{filter:drop-shadow(0 0 3px var(--c-primary))}
+}
+@media(prefers-reduced-motion:reduce){.path-motif-peak{animation:none}}
+
+/* Ambient background — two soft, low-opacity blurred blobs for quiet
+   depth. Deliberately restrained: this sits behind a login/payment form,
+   not a marketing hero, so it should be felt more than seen. */
+.bg-motif{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-motif::before,.bg-motif::after{content:'';position:absolute;border-radius:50%;filter:blur(70px);background:var(--c-primary)}
+.bg-motif::before{width:340px;height:340px;top:-90px;left:-110px;opacity:.06}
+.bg-motif::after{width:280px;height:280px;bottom:-70px;right:-90px;opacity:.05}
+
 /* Net */
 .net{display:flex;align-items:center;justify-content:center;gap:.45rem;font-size:var(--fs-caption);color:var(--c-text-soft);font-weight:var(--fw-medium);margin-bottom:1.25rem;background:var(--c-bg);border-radius:var(--r-full);padding:.32rem .9rem;box-shadow:var(--ne-in-sm)}
 .ndot{width:7px;height:7px;border-radius:50%;background:var(--c-primary);animation:npulse 2s ease-in-out infinite;flex-shrink:0}
@@ -135,10 +155,19 @@ body{font-family:var(--ff);background:var(--c-bg);color:var(--t1);min-height:100
 </head>
 <body>
 
+<div class="bg-motif" aria-hidden="true"></div>
+
 <div class="card" id="main-card">
   <div class="logo">
     <div class="l-icon brand-mark"><img src="icon-192.png" alt="Abhyas"></div>
     <h1>Abhyas</h1>
+    <svg class="path-motif" viewBox="0 0 180 44" fill="none" aria-hidden="true">
+      <path d="M14,36 C55,34 75,20 110,16 C130,14 150,10 166,8" stroke="var(--c-text-faint)" stroke-width="1.5" stroke-dasharray="3 4" stroke-linecap="round"/>
+      <circle cx="14" cy="36" r="3" fill="var(--c-surface)" stroke="var(--c-text-faint)" stroke-width="1.5"/>
+      <circle cx="62" cy="27" r="3" fill="var(--c-surface)" stroke="var(--c-text-faint)" stroke-width="1.5"/>
+      <circle cx="110" cy="16" r="3" fill="var(--c-surface)" stroke="var(--c-text-faint)" stroke-width="1.5"/>
+      <circle class="path-motif-peak" cx="166" cy="8" r="5" fill="var(--c-primary)"/>
+    </svg>
     <p>Your path to mastery</p>
   </div>
 
