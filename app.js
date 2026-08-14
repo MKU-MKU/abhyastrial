@@ -944,12 +944,12 @@ const QUIZ = {
     }
     el._retry = retryFn || null;
     el.innerHTML = `<div style="background:var(--c2);border:1px solid var(--bad-bd);border-radius:var(--r3);padding:1.4rem 1.5rem;max-width:380px;width:100%;box-shadow:var(--sh3)">
-      <div style="font-size:1.4rem;margin-bottom:.5rem">❌</div>
+      <div style="font-size:1.4rem;margin-bottom:.5rem"><i class="ph ph-x-circle"></i></div>
       <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--ros);margin-bottom:.6rem">Failed to Load</div>
       <div style="font-size:.78rem;color:var(--t2);line-height:1.6;margin-bottom:1rem">${esc(msg)}</div>
       <div style="display:flex;gap:.5rem">
-        <button id="quiz-err-retry" style="flex:1;padding:.58rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r1);color:#0F0A00;font-weight:700;font-size:.82rem;cursor:pointer;font-family:var(--ff)">🔄 Retry</button>
-        <button onclick="document.getElementById('quiz-error-card').remove()" style="padding:.58rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.82rem;cursor:pointer;font-family:var(--ff)">✕ Close</button>
+        <button id="quiz-err-retry" style="flex:1;padding:.58rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r1);color:#0F0A00;font-weight:700;font-size:.82rem;cursor:pointer;font-family:var(--ff)"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+        <button onclick="document.getElementById('quiz-error-card').remove()" style="padding:.58rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r1);color:var(--t2);font-size:.82rem;cursor:pointer;font-family:var(--ff)"><i class="ph ph-x"></i> Close</button>
       </div>
     </div>`;
     el.style.display = 'flex';
@@ -998,7 +998,7 @@ const QUIZ = {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1.5rem;backdrop-filter:blur(4px)';
     modal.innerHTML = `
       <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
-        <div style="font-size:1.2rem;margin-bottom:.35rem">${mode==='exam'?'📝':'⚡'}</div>
+        <div style="font-size:1.2rem;margin-bottom:.35rem">${mode==='exam'?'<i class="ph ph-note-pencil"></i>':'<i class="ph ph-lightning"></i>'}</div>
         <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--t1);margin-bottom:.2rem">${esc(chapterName||'Quiz')}</div>
         <div style="font-size:.74rem;color:var(--t3);margin-bottom:1rem">${total} questions available — how many do you want to do?</div>
         <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">
@@ -1009,11 +1009,11 @@ const QUIZ = {
           style="width:100%;background:var(--c1);border:1.5px solid var(--b1);border-radius:var(--r2);padding:.5rem .75rem;color:var(--t1);font-size:.9rem;font-family:var(--ff);outline:none;box-sizing:border-box;margin-bottom:.6rem">
         <label style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;cursor:pointer;font-size:.8rem;color:var(--t2)">
           <input id="qlm-shuffle" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--amb);cursor:pointer">
-          🔀 Shuffle question order
+          <i class="ph ph-shuffle"></i> Shuffle question order
         </label>
         <div style="display:flex;gap:.4rem">
           <button id="qlm-start" style="flex:1;padding:.62rem;background:linear-gradient(135deg,var(--amb2),var(--amb));border:none;border-radius:var(--r2);color:#0F0A00;font-weight:700;font-size:.85rem;cursor:pointer;font-family:var(--ff)">Start →</button>
-          <button onclick="document.getElementById('quiz-limit-modal').remove()" style="padding:.62rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-size:.83rem;cursor:pointer;font-family:var(--ff)">✕</button>
+          <button onclick="document.getElementById('quiz-limit-modal').remove()" style="padding:.62rem .9rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-size:.83rem;cursor:pointer;font-family:var(--ff)"><i class="ph ph-x"></i></button>
         </div>
       </div>`;
     document.body.appendChild(modal);
@@ -1178,7 +1178,7 @@ const QUIZ = {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:1.5rem;backdrop-filter:blur(4px)';
     modal.innerHTML = `
       <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
-        <div style="font-size:1.2rem;margin-bottom:.35rem">📝</div>
+        <div style="font-size:1.2rem;margin-bottom:.35rem"><i class="ph ph-note-pencil"></i></div>
         <div style="font-family:var(--fd);font-size:.92rem;font-weight:700;color:var(--t1);margin-bottom:.2rem">Unfinished exam found</div>
         <div style="font-size:.78rem;color:var(--t3);margin-bottom:1rem">${esc(snap.ch)} — ${answered}/${snap.qs.length} answered, ${fmt(adjustedLeft)} left on the clock. This was probably interrupted by a reload or a closed tab.</div>
         <div style="display:flex;gap:.4rem">
@@ -1225,12 +1225,12 @@ const QUIZ = {
     const total = S.quiz.qs.length;
     modal.innerHTML = `
       <div style="background:var(--c2);border:1px solid var(--bd);border-radius:var(--r3);padding:1.5rem;max-width:340px;width:100%;box-shadow:var(--sh3)">
-        <div style="font-size:1.3rem;margin-bottom:.4rem">⚠️</div>
+        <div style="font-size:1.3rem;margin-bottom:.4rem"><i class="ph ph-warning"></i></div>
         <div style="font-family:var(--fd);font-size:.95rem;font-weight:700;color:var(--t1);margin-bottom:.3rem">Leave this quiz?</div>
         <div style="font-size:.76rem;color:var(--t3);margin-bottom:1.1rem">${isExam ? answered+' of '+total+' answered' : 'Question '+(S.quiz.idx+1)+' of '+total} · ${S.quiz.ch}</div>
         <div style="display:flex;flex-direction:column;gap:.45rem">
-          ${isExam ? '<button id="qem-finish" style="padding:.62rem;background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:var(--r2);color:var(--grn);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">✅ Submit & See Results — grade what I have answered so far</button>' : ''}
-          <button id="qem-quit" style="padding:.62rem;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);color:var(--ros);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">🚪 Quit — discard this session</button>
+          ${isExam ? '<button id="qem-finish" style="padding:.62rem;background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:var(--r2);color:var(--grn);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left"><i class="ph ph-check-circle"></i> Submit & See Results — grade what I have answered so far</button>' : ''}
+          <button id="qem-quit" style="padding:.62rem;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);color:var(--ros);font-weight:700;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left"><i class="ph ph-door"></i> Quit — discard this session</button>
           <button id="qem-cancel" style="padding:.62rem;background:var(--b0);border:1px solid var(--b1);border-radius:var(--r2);color:var(--t2);font-weight:600;font-size:.83rem;cursor:pointer;font-family:var(--ff);text-align:left">↩ Cancel — keep studying</button>
         </div>
       </div>`;
@@ -1546,14 +1546,14 @@ const PROG = {
     if(!el) return;
     const p = PROG.predict();
     if(!p){
-      el.innerHTML = `<div class="card"><div class="card-hd"><h3>🎯 Predicted Exam Score</h3></div>
-        <div class="empty"><div class="empty-i">🎯</div><p>Complete at least 3 quizzes (exam mode helps most) to unlock a prediction</p></div></div>`;
+      el.innerHTML = `<div class="card"><div class="card-hd"><h3><i class="ph ph-target"></i> Predicted Exam Score</h3></div>
+        <div class="empty"><div class="empty-i"><i class="ph ph-target"></i></div><p>Complete at least 3 quizzes (exam mode helps most) to unlock a prediction</p></div></div>`;
       return;
     }
     const barColor = p.predicted>=70?'var(--grn)':p.predicted>=50?'var(--amb)':'var(--ros)';
     const confColor = p.confidence==='High'?'tg':p.confidence==='Medium'?'ta':'tr';
     el.innerHTML = `<div class="card">
-      <div class="card-hd"><h3>🎯 Predicted Exam Score</h3><span class="ctag ${confColor}">${p.confidence} confidence</span></div>
+      <div class="card-hd"><h3><i class="ph ph-target"></i> Predicted Exam Score</h3><span class="ctag ${confColor}">${p.confidence} confidence</span></div>
       <div style="display:flex;align-items:baseline;gap:.5rem;margin:.3rem 0 .5rem">
         <span style="font-size:2rem;font-weight:800;color:var(--t1);font-family:var(--fd)">${p.predicted}%</span>
         <span style="font-size:.76rem;color:var(--t3)">± ${p.margin}% · based on your last ${p.sampleSize} session${p.sampleSize!==1?'s':''}</span>
@@ -1584,17 +1584,17 @@ const PROG = {
     const chapEl = document.getElementById('chap-acc');
     const entries = Object.entries(byChap).sort((a,b)=>b[1].lastAt-a[1].lastAt);
     if(!entries.length){
-      chapEl.innerHTML = '<div class="empty"><div class="empty-i">📊</div><p>Complete a quiz to see chapter breakdowns</p></div>';
+      chapEl.innerHTML = '<div class="empty"><div class="empty-i"><i class="ph ph-chart-bar"></i></div><p>Complete a quiz to see chapter breakdowns</p></div>';
     } else {
       const weak = entries.filter(([,d])=> d.total>=5 && d.total ? Math.round((d.correct/d.total)*100)<60 : false);
       const weakHtml = weak.length ? `
         <div style="background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:.8rem">
-          <div style="font-size:.72rem;font-weight:800;color:var(--ros);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">⚠️ Weak Topics — needs attention</div>
+          <div style="font-size:.72rem;font-weight:800;color:var(--ros);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem"><i class="ph ph-warning"></i> Weak Topics — needs attention</div>
           ${weak.map(([name,d])=>{
             const p=d.total?Math.round((d.correct/d.total)*100):0;
             return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.2rem 0;font-size:.76rem"><span style="color:var(--t2)">${esc(name)}</span><span class="ctag tr">${p}%</span></div>`;
           }).join('')}
-          <div style="margin-top:.5rem;font-size:.7rem;color:var(--t3)">Tip: Use ❌ Wrong Bank to drill these topics</div>
+          <div style="margin-top:.5rem;font-size:.7rem;color:var(--t3)">Tip: Use <i class="ph ph-x-circle"></i> Wrong Bank to drill these topics</div>
         </div>` : '';
       chapEl.innerHTML = weakHtml + entries.map(([name,d])=>{
         const p = d.total ? Math.round((d.correct/d.total)*100) : 0;
@@ -1972,10 +1972,10 @@ const HOME = {
     const el = document.getElementById('recent-sessions');
     if(!el)return;
     const sessions = S.prog.sessions.slice(0,6);
-    if(!sessions.length){ el.innerHTML='<div class="empty"><div class="empty-i">📈</div><p>No sessions yet — start a quiz!</p></div>'; return; }
-    const mIc=m=>m==='exam'?'📝':m==='flashcard'?'⚡':'📊';
+    if(!sessions.length){ el.innerHTML='<div class="empty"><div class="empty-i"><i class="ph ph-trend-up"></i></div><p>No sessions yet — start a quiz!</p></div>'; return; }
+    const mIc=m=>m==='exam'?'<i class="ph ph-note-pencil"></i>':m==='flashcard'?'<i class="ph ph-lightning"></i>':'<i class="ph ph-chart-bar"></i>';
     el.innerHTML = sessions.map(s=>{
-      const ic=(s.chapter||'').includes('Wrong')?'❌':(s.chapter||'').includes('Daily')?'🌟':(s.chapter||'').includes('Bookmarks')?'⭐':mIc(s.mode);
+      const ic=(s.chapter||'').includes('Wrong')?'<i class="ph ph-x-circle"></i>':(s.chapter||'').includes('Daily')?'<i class="ph ph-star"></i>':(s.chapter||'').includes('Bookmarks')?'<i class="ph ph-star"></i>':mIc(s.mode);
       const cls=s.pct>=70?'tg':s.pct>=40?'ta':'tr';
       const dt=new Date(s.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
       return `<div class="sess-row"><span class="sess-ic">${ic}</span><div class="sess-info"><div class="sess-ch">${esc(s.chapter||'Study')}</div><div class="sess-ts">${dt}</div></div><span class="ctag ${cls}">${s.pct}%</span></div>`;
@@ -2143,10 +2143,10 @@ const TT = {
       return `
       <div class="tt-row" style="${isNow?'background:rgba(245,166,35,.08);border-radius:8px;padding-left:.4rem':''}">
         <div class="tt-ti">${s.start}–${s.end}</div>
-        <div class="tt-na">${isNow?'🔴 ':''}${esc(s.name)}</div>
-        <button class="ib" onclick="TT.remove('${s.id}')">🗑</button>
+        <div class="tt-na">${isNow?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ros);margin-right:.35rem"></span>':''}${esc(s.name)}</div>
+        <button class="ib" onclick="TT.remove('${s.id}')"><i class="ph ph-trash"></i></button>
       </div>
-    `;}).join('') : '<div class="empty"><div class="empty-i">📅</div><p>Nothing scheduled today</p></div>';
+    `;}).join('') : '<div class="empty"><div class="empty-i"><i class="ph ph-calendar-blank"></i></div><p>Nothing scheduled today</p></div>';
 
     const weekEl = document.getElementById('tt-week');
     const todayIdx = new Date().getDay();
@@ -2375,67 +2375,67 @@ const TUTORIAL = {
   _seenKey: 'abhyas_tut_seen',
   _steps: [
     {
-      icon: '👋',
+      icon: '<i class="ph ph-hand-waving"></i>',
       title: 'Welcome to Abhyas',
       body: `<p>This is your Smart Study Hub for Nepal Engineering (Level 5/7) and PSC/Loksewa prep. Once a chapter is cached it works fully offline — handy for load-shedding or weak signal.</p>`
     },
     {
-      icon: '🔑',
+      icon: '<i class="ph ph-key"></i>',
       title: 'Your account status',
       body: `
         <p>Check the sidebar under your name for your current status:</p>
         <ul style="margin:0 0 0 1.1rem;padding:0">
-          <li><b>⏳ Trial</b> — free access, counts down live. Pay anytime from the payment screen to go permanent.</li>
-          <li><b>✅ Permanent</b> — verified, unlimited access forever, fully usable offline.</li>
-          <li><b>📅 Yearly</b> — active until the renewal date shown in the sidebar.</li>
+          <li><b><i class="ph ph-hourglass"></i> Trial</b> — free access, counts down live. Pay anytime from the payment screen to go permanent.</li>
+          <li><b><i class="ph ph-check-circle"></i> Permanent</b> — verified, unlimited access forever, fully usable offline.</li>
+          <li><b><i class="ph ph-calendar-blank"></i> Yearly</b> — active until the renewal date shown in the sidebar.</li>
         </ul>
         <p style="margin-top:.5rem">Once you're Trial, Permanent, or active Yearly, you land straight here next time — no re-login needed on this device, even offline.</p>`
     },
     {
-      icon: '🏠',
+      icon: '<i class="ph ph-house"></i>',
       title: 'Your Dashboard',
       body: `
-        <p>The Dashboard (🏠) is home base:</p>
+        <p>The Dashboard (<i class="ph ph-house"></i>) is home base:</p>
         <ul style="margin:0 0 0 1.1rem;padding:0">
-          <li><b>🌟 Daily Challenge</b> — 30 mixed questions, keeps your streak alive.</li>
-          <li><b>⚡ Adaptive Practice</b> — pulls the questions you're actually struggling with first.</li>
+          <li><b><i class="ph ph-star"></i> Daily Challenge</b> — 30 mixed questions, keeps your streak alive.</li>
+          <li><b><i class="ph ph-lightning"></i> Adaptive Practice</b> — pulls the questions you're actually struggling with first.</li>
           <li>Quick stats and Quick Action tiles for everything else in the app.</li>
         </ul>`
     },
     {
-      icon: '📚',
+      icon: '<i class="ph ph-book-open"></i>',
       title: 'Studying a chapter',
       body: `
         <p>Open <b>Online Study</b> or <b>Local File</b> from the sidebar, pick a chapter, choose how many questions and whether to shuffle, then pick a mode:</p>
         <ul style="margin:0 0 0 1.1rem;padding:0">
           <li><b>Practice</b> — instant feedback, no time pressure.</li>
-          <li><b>📝 Exam</b> — timed, graded at the end.</li>
-          <li><b>⚡ Flashcard</b> — quick flip-through review.</li>
+          <li><b><i class="ph ph-note-pencil"></i> Exam</b> — timed, graded at the end.</li>
+          <li><b><i class="ph ph-lightning"></i> Flashcard</b> — quick flip-through review.</li>
         </ul>
         <p style="margin-top:.5rem">Shortcuts while answering: <b>A/B/C/D</b> or <b>1–5</b> to pick an option, <b>←/→</b> between cards, <b>Esc</b> to quit.</p>`
     },
     {
-      icon: '⭐',
+      icon: '<i class="ph ph-star"></i>',
       title: 'Bookmarks, Flags & Wrong Bank',
       body: `
         <p>Tag any question while studying:</p>
         <ul style="margin:0 0 0 1.1rem;padding:0">
-          <li><b>⭐ Bookmarks</b> — save with a label (Need Check, Interesting, Debating, Confusing, Formulae).</li>
-          <li><b>🚩 Flagged</b> — a quick "come back to this" marker.</li>
-          <li><b>❌ Wrong Bank</b> — anything you get wrong lands here automatically, and needs two correct answers in a row, spaced a few days apart, before it's considered mastered.</li>
+          <li><b><i class="ph ph-star"></i> Bookmarks</b> — save with a label (Need Check, Interesting, Debating, Confusing, Formulae).</li>
+          <li><b><i class="ph ph-flag"></i> Flagged</b> — a quick "come back to this" marker.</li>
+          <li><b><i class="ph ph-x-circle"></i> Wrong Bank</b> — anything you get wrong lands here automatically, and needs two correct answers in a row, spaced a few days apart, before it's considered mastered.</li>
         </ul>`
     },
     {
-      icon: '📅',
+      icon: '<i class="ph ph-calendar-blank"></i>',
       title: 'Timetable & Progress',
       body: `<p><b>Timetable</b> lets you block out study sessions by day/time — the Dashboard clock shows what's happening right now. <b>Progress</b> tracks your accuracy over time and predicts your likely exam marks from recent sessions.</p>`
     },
     {
-      icon: '📦',
+      icon: '<i class="ph ph-package"></i>',
       title: 'Offline & installing the app',
       body: `
         <p>Chapters you open get cached automatically for offline use — check <b>Offline Cache</b> in the sidebar to manage what's stored on this device.</p>
-        <p style="margin-top:.5rem">Tap the <b>📲</b> icon in the top bar to install Abhyas to your home screen — it then opens like a normal app, even with no signal. You can reopen this tutorial anytime from the sidebar or the Dashboard's Quick Actions.</p>`
+        <p style="margin-top:.5rem">Tap the <b><i class="ph ph-device-mobile"></i></b> icon in the top bar to install Abhyas to your home screen — it then opens like a normal app, even with no signal. You can reopen this tutorial anytime from the sidebar or the Dashboard's Quick Actions.</p>`
     }
   ],
   _idx: 0,
