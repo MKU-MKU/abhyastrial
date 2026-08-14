@@ -677,11 +677,11 @@ const PSY = {
       return `<div class="sb-lbl" style="margin-top:.7rem;display:flex;align-items:center;justify-content:space-between;padding-right:.2rem">
           <span>${label}</span>
           <span style="display:flex;gap:.3rem">
-            <button class="btn btn-sm btn-c" style="font-size:.56rem;padding:.15rem .4rem" onclick="PSY.allLv('${lv}')">✅ All</button>
+            <button class="btn btn-sm btn-c" style="font-size:.56rem;padding:.15rem .4rem" onclick="PSY.allLv('${lv}')"><i class="ph ph-check"></i> All</button>
             <button class="btn btn-sm btn-r" style="font-size:.56rem;padding:.15rem .4rem" onclick="PSY.noneLv('${lv}')">✕</button>
           </span>
         </div>
-        <div class="ch-list" id="psy-lv-${lv}">${items || '<div class="empty"><div class="empty-i">📚</div><p>No chapters yet</p></div>'}</div>`;
+        <div class="ch-list" id="psy-lv-${lv}">${items || '<div class="empty"><div class="empty-i"><i class="ph ph-book-open"></i></div><p>No chapters yet</p></div>'}</div>`;
     }).join('');
     PSY._info();
   },
@@ -789,10 +789,10 @@ const REV = {
     if(!el)return;
     if(!arr.length){
       const copy = kind==='bk'
-        ? { i:'⭐', t:'No bookmarks yet', s:'Tap the star on any question while studying to save it here.' }
+        ? { i:'<i class="ph ph-star"></i>', t:'No bookmarks yet', s:'Tap the star on any question while studying to save it here.' }
         : kind==='fl'
-        ? { i:'🚩', t:'No flagged questions yet', s:'Tap the flag on a question you want to come back to.' }
-        : { i:'❌', t:'No wrong answers yet', s:'Questions you miss land here automatically, ready for spaced review.' };
+        ? { i:'<i class="ph ph-flag"></i>', t:'No flagged questions yet', s:'Tap the flag on a question you want to come back to.' }
+        : { i:'<i class="ph ph-x-circle"></i>', t:'No wrong answers yet', s:'Questions you miss land here automatically, ready for spaced review.' };
       el.innerHTML = `<div class="empty"><div class="empty-i">${copy.i}</div><p>${copy.t}</p><p style="font-size:.72rem;color:var(--t3);margin-top:.15rem">${copy.s}</p></div>`;
       return;
     }
@@ -813,18 +813,18 @@ const REV = {
       if(kind==='wr'){
         const isDue = (q._nextDue==null) || q._nextDue<=Date.now();
         const streak = q._streak||0;
-        if(isDue){ srBadge = `<span class="ctag tr" style="margin-left:.3rem">🔁 Due now</span>`; }
+        if(isDue){ srBadge = `<span class="ctag tr" style="margin-left:.3rem"><i class="ph ph-repeat"></i> Due now</span>`; }
         else {
           const daysLeft = Math.ceil((q._nextDue-Date.now())/(24*60*60*1000));
           srBadge = `<span class="ctag ta" style="margin-left:.3rem">⏳ Due in ${daysLeft}d</span>`;
         }
-        if(streak>0) srBadge += `<span class="ctag tg" style="margin-left:.3rem">✓×${streak}</span>`;
+        if(streak>0) srBadge += `<span class="ctag tg" style="margin-left:.3rem"><i class="ph ph-check"></i>×${streak}</span>`;
       }
       return `<div class="qcard" style="margin-bottom:.5rem">
         <div class="qm"><span class="qn mono">#${i+1}</span>
-          ${q.tag ? `<span class="ctag ta" style="margin-left:.3rem">🏷 ${esc(q.tag)}</span>` : ''}
+          ${q.tag ? `<span class="ctag ta" style="margin-left:.3rem"><i class="ph ph-tag"></i> ${esc(q.tag)}</span>` : ''}
           ${srBadge}
-          <button class="ib" onclick="REV._removeOne('${kind}','${esc(q.uid||'')}')">🗑</button>
+          <button class="ib" onclick="REV._removeOne('${kind}','${esc(q.uid||'')}')"><i class="ph ph-trash"></i></button>
         </div>
         <div class="qt" style="font-size:.82rem">${esc(q.q)}</div>
         <div style="margin-top:.3rem">${opts}</div>
