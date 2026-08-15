@@ -641,40 +641,40 @@ input[type=file]:hover{border-color:var(--amb)}
 
       <!-- BOOKMARKS -->
       <div class="view" id="view-bookmarks">
-        <div class="ph"><h2>⭐ Bookmarks</h2><p>Questions saved for focused revision</p></div>
+        <div class="ph"><h2><i class="ph ph-star"></i> Bookmarks</h2><p>Questions saved for focused revision</p></div>
         <div class="card"><div class="card-hd"><h3>Saved Questions</h3>
-          <div class="bg"><button class="btn btn-sm btn-a" onclick="REV.start('bk','flashcard')">⚡ Flash</button><button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="REV.start('bk','exam')">📝 Exam</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('bk')">🗑</button></div>
+          <div class="bg"><button class="btn btn-sm btn-a" onclick="REV.start('bk','flashcard')"><i class="ph ph-lightning"></i> Flash</button><button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="REV.start('bk','exam')"><i class="ph ph-note-pencil"></i> Exam</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('bk')"><i class="ph ph-trash"></i></button></div>
         </div><div id="bk-list"></div></div>
       </div>
 
       <!-- FLAGGED -->
       <div class="view" id="view-flagged">
-        <div class="ph"><h2>🚩 Flagged</h2><p>Questions marked for follow-up</p></div>
+        <div class="ph"><h2><i class="ph ph-flag"></i> Flagged</h2><p>Questions marked for follow-up</p></div>
         <div class="card"><div class="card-hd"><h3>Flagged Questions</h3>
-          <div class="bg"><button class="btn btn-sm btn-a" onclick="REV.start('fl','flashcard')">⚡ Flash</button><button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="REV.start('fl','exam')">📝 Exam</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('fl')">🗑</button></div>
+          <div class="bg"><button class="btn btn-sm btn-a" onclick="REV.start('fl','flashcard')"><i class="ph ph-lightning"></i> Flash</button><button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="REV.start('fl','exam')"><i class="ph ph-note-pencil"></i> Exam</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('fl')"><i class="ph ph-trash"></i></button></div>
         </div><div id="fl-list"></div></div>
       </div>
 
       <!-- WRONG BANK -->
       <div class="view" id="view-wrong">
-        <div class="ph"><h2>❌ Wrong Bank</h2><p>Spaced repetition: <span id="wrc-due">0</span> due for review right now</p></div>
+        <div class="ph"><h2><i class="ph ph-x-circle"></i> Wrong Bank</h2><p>Spaced repetition: <span id="wrc-due">0</span> due for review right now</p></div>
         <div class="card"><div class="card-hd"><h3>Wrong Answers</h3>
-          <div class="bg"><button class="btn btn-sm btn-r" onclick="REV.start('wr','flashcard',true)">🔁 Retry Due</button><button class="btn btn-sm btn-p" onclick="REV.start('wr','flashcard')">⚡ Retry All</button><button class="btn btn-sm btn-a" onclick="REV.start('wr','exam')">📝 Exam All</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('wr')">🗑</button></div>
+          <div class="bg"><button class="btn btn-sm btn-r" onclick="REV.start('wr','flashcard',true)"><i class="ph ph-repeat"></i> Retry Due</button><button class="btn btn-sm btn-p" onclick="REV.start('wr','flashcard')"><i class="ph ph-lightning"></i> Retry All</button><button class="btn btn-sm btn-a" onclick="REV.start('wr','exam')"><i class="ph ph-note-pencil"></i> Exam All</button><button class="btn btn-sm btn-r" onclick="REV.clearAll('wr')"><i class="ph ph-trash"></i></button></div>
         </div><div id="wr-list"></div></div>
       </div>
 
       <!-- TIMETABLE -->
       <div class="view" id="view-timetable">
-        <div class="ph"><h2>📅 Timetable</h2><p>Plan your weekly study sessions</p></div>
+        <div class="ph"><h2><i class="ph ph-calendar-blank"></i> Timetable</h2><p>Plan your weekly study sessions</p></div>
         <div class="g2" style="align-items:start">
           <div>
             <div class="card"><div class="tt-clock" id="tt-clock">00:00:00</div><div class="tt-date" id="tt-date"></div><div id="tt-now"></div></div>
             <div class="card"><div class="card-hd"><h3>Today's Schedule</h3>
-              <div class="bg"><button class="btn btn-sm btn-a" onclick="TT.exportJ()">📤</button><button class="btn btn-sm btn-a" onclick="TT.importJ()">📥</button></div>
+              <div class="bg"><button class="btn btn-sm btn-a" onclick="TT.exportJ()"><i class="ph ph-upload"></i></button><button class="btn btn-sm btn-a" onclick="TT.importJ()"><i class="ph ph-download-simple"></i></button></div>
             </div><div id="tt-today"></div></div>
           </div>
           <div>
-            <div class="card"><div class="card-hd"><h3>🔔 Reminders</h3></div>
+            <div class="card"><div class="card-hd"><h3><i class="ph ph-bell"></i> Reminders</h3></div>
               <div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem 0">
                 <label for="tt-remind-toggle" style="font-size:.78rem;color:var(--t2);cursor:pointer">Notify before each session</label>
                 <input type="checkbox" id="tt-remind-toggle" onchange="TT.toggleReminders(this.checked)" style="width:1.15rem;height:1.15rem;accent-color:var(--amb);cursor:pointer">
@@ -700,40 +700,40 @@ input[type=file]:hover{border-color:var(--amb)}
 
       <!-- PROGRESS -->
       <div class="view" id="view-progress">
-        <div class="ph"><h2>📊 Progress</h2><p>Overall performance &amp; chapter breakdown</p></div>
+        <div class="ph"><h2><i class="ph ph-chart-bar"></i> Progress</h2><p>Overall performance &amp; chapter breakdown</p></div>
         <div class="g4" id="prog-stats" style="margin-bottom:.85rem"></div>
         <div id="predict-card" style="margin-bottom:.85rem"></div>
         <div class="card"><div class="card-hd"><h3>Chapter Accuracy</h3><span class="ctag tp">Breakdown</span></div><div id="chap-acc"></div></div>
         <div class="card"><div class="card-hd"><h3>Data Management</h3><span class="ctag tr">Backup</span></div>
           <div class="bg">
-            <button class="btn btn-a" onclick="DATA.exp()">📤 Export</button>
-            <button class="btn btn-a" onclick="DATA.imp()">📥 Import</button>
-            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="DATA.clearQ()">🧹 Clear Q Cache</button>
-            <button class="btn btn-r" onclick="DATA.reset()">⚠️ Reset All</button>
+            <button class="btn btn-a" onclick="DATA.exp()"><i class="ph ph-upload"></i> Export</button>
+            <button class="btn btn-a" onclick="DATA.imp()"><i class="ph ph-download-simple"></i> Import</button>
+            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="DATA.clearQ()"><i class="ph ph-broom"></i> Clear Q Cache</button>
+            <button class="btn btn-r" onclick="DATA.reset()"><i class="ph ph-warning"></i> Reset All</button>
           </div>
         </div>
         <div class="card"><div class="card-hd"><h3>Cloud Backup</h3><span class="ctag tg">Auto</span></div>
           <p style="font-size:.78rem;color:var(--t3);margin:0 0 .6rem">Your progress, bookmarks, flags, and wrong-answer bank are backed up to your account automatically while you're online — useful if you switch devices or clear your browser. This never overwrites what's on this device; it only fills in a brand new one.</p>
           <div id="psync-status" style="font-size:.75rem;color:var(--t3);margin-bottom:.6rem">Not synced yet this session.</div>
           <div class="bg">
-            <button class="btn btn-a" onclick="DATA.syncNow()">☁️ Back Up Now</button>
-            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="DATA.restoreCloud()">⬇️ Restore From Cloud</button>
+            <button class="btn btn-a" onclick="DATA.syncNow()"><i class="ph ph-cloud-arrow-up"></i> Back Up Now</button>
+            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="DATA.restoreCloud()"><i class="ph ph-cloud-arrow-down"></i> Restore From Cloud</button>
           </div>
         </div>
       </div>
 
       <!-- OFFLINE CACHE -->
       <div class="view" id="view-offline">
-        <div class="ph"><h2>📦 Offline Cache</h2><p>Download all question sets for offline study</p></div>
+        <div class="ph"><h2><i class="ph ph-package"></i> Offline Cache</h2><p>Download all question sets for offline study</p></div>
         <div class="card">
           <div class="card-hd"><h3>Cache Status</h3><span class="ctag" id="cache-tag">Checking…</span></div>
           <div id="cache-txt" style="font-size:.76rem;color:var(--t3);margin-bottom:.65rem"></div>
           <div class="cpb" id="cpb"><div class="cpf" id="cpf"></div></div>
           <div id="cptxt" style="font-size:.68rem;color:var(--t3);margin:.24rem 0"></div>
           <div class="bg" style="margin-top:.38rem">
-            <button class="btn btn-a btn-lg" onclick="CACHE.dl()">⬇️ Cache All Data</button>
-            <button class="btn btn-r" onclick="CACHE.clr()">🗑 Clear Cache</button>
-            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="CACHE.purgeStale()">🧹 Fix Errors</button>
+            <button class="btn btn-a btn-lg" onclick="CACHE.dl()"><i class="ph ph-download-simple"></i> Cache All Data</button>
+            <button class="btn btn-r" onclick="CACHE.clr()"><i class="ph ph-trash"></i> Clear Cache</button>
+            <button class="btn btn-sm" style="background:var(--b0);border:1px solid var(--b1);color:var(--t2)" onclick="CACHE.purgeStale()"><i class="ph ph-broom"></i> Fix Errors</button>
           </div>
         </div>
         <div class="card"><div class="card-hd"><h3>Per-Level Status</h3></div><div class="cg" id="cache-grid"></div></div>
