@@ -466,10 +466,10 @@ input[type=file]:hover{border-color:var(--amb)}
     <div class="tb-r">
       <div class="uchip" id="uchip">👤 —</div>
       <button class="tb-btn" id="net-mode-btn" onclick="NET.toggle()" title="Online mode — click to force offline" style="font-size:.8rem;min-width:32px;justify-content:center;color:var(--grn);border-color:rgba(var(--grn-rgb),.35);background:rgba(var(--grn-rgb),.08)">🟢</button>
-      <button class="tb-btn" onclick="UI.theme()" title="Toggle theme">🌓</button>
-      <button class="tb-btn" onclick="PWA.toggleFullscreen()" title="Fullscreen">⛶</button>
-      <button class="tb-btn" id="installBtn" style="display:none" onclick="PWA.install()" title="Install App">📲</button>
-      <button class="tb-btn danger" onclick="AUTH.logout()" title="Log out">⏻</button>
+      <button class="tb-btn" onclick="UI.theme()" title="Toggle theme"><i class="ph ph-circle-half"></i></button>
+      <button class="tb-btn" onclick="PWA.toggleFullscreen()" title="Fullscreen"><i class="ph ph-corners-out"></i></button>
+      <button class="tb-btn" id="installBtn" style="display:none" onclick="PWA.install()" title="Install App"><i class="ph ph-device-mobile"></i></button>
+      <button class="tb-btn danger" onclick="AUTH.logout()" title="Log out"><i class="ph ph-power"></i></button>
     </div>
   </div>
 
@@ -484,29 +484,29 @@ input[type=file]:hover{border-color:var(--amb)}
           <div id="sb-uname" style="font-size:.8rem;font-weight:700;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Student</div>
           <div id="sb-ustatus" style="font-size:.64rem;color:var(--t3)">—</div>
         </div>
-        <button class="ib" onclick="AUTH.logout()" title="Log out" style="flex-shrink:0">⏻</button>
+        <button class="ib" onclick="AUTH.logout()" title="Log out" style="flex-shrink:0"><i class="ph ph-power"></i></button>
       </div>
       <div class="sb-sec">
         <div class="sb-lbl">Study</div>
-        <div class="sb-item active" id="nav-home"    onclick="UI.go('home')"><div class="sb-ic">🏠</div>Dashboard</div>
-        <div class="sb-item"        id="nav-online"  onclick="UI.go('online')"><div class="sb-ic">☁️</div>Online Study</div>
-        <div class="sb-item"        id="nav-local"   onclick="UI.go('local')"><div class="sb-ic">📂</div>Local File</div>
-        <div class="sb-item"        id="nav-psycho"  onclick="UI.go('psycho')"><div class="sb-ic">⚡</div>Psycho Mode<span class="sb-badge amb">HOT</span></div>
+        <div class="sb-item active" id="nav-home"    onclick="UI.go('home')"><div class="sb-ic"><i class="ph ph-house"></i></div>Dashboard</div>
+        <div class="sb-item"        id="nav-online"  onclick="UI.go('online')"><div class="sb-ic"><i class="ph ph-cloud"></i></div>Online Study</div>
+        <div class="sb-item"        id="nav-local"   onclick="UI.go('local')"><div class="sb-ic"><i class="ph ph-folder-open"></i></div>Local File</div>
+        <div class="sb-item"        id="nav-psycho"  onclick="UI.go('psycho')"><div class="sb-ic"><i class="ph ph-lightning"></i></div>Psycho Mode<span class="sb-badge amb">HOT</span></div>
       </div>
       <div class="sb-div"></div>
       <div class="sb-sec">
         <div class="sb-lbl">Review</div>
-        <div class="sb-item" id="nav-bookmarks" onclick="UI.go('bookmarks')"><div class="sb-ic">⭐</div>Bookmarks<span class="sb-badge ok" id="bkc">0</span></div>
-        <div class="sb-item" id="nav-flagged"   onclick="UI.go('flagged')"><div class="sb-ic">🚩</div>Flagged<span class="sb-badge" id="flc">0</span></div>
-        <div class="sb-item" id="nav-wrong"     onclick="UI.go('wrong')"><div class="sb-ic">❌</div>Wrong Bank<span class="sb-badge" id="wrc">0</span></div>
+        <div class="sb-item" id="nav-bookmarks" onclick="UI.go('bookmarks')"><div class="sb-ic"><i class="ph ph-star"></i></div>Bookmarks<span class="sb-badge ok" id="bkc">0</span></div>
+        <div class="sb-item" id="nav-flagged"   onclick="UI.go('flagged')"><div class="sb-ic"><i class="ph ph-flag"></i></div>Flagged<span class="sb-badge" id="flc">0</span></div>
+        <div class="sb-item" id="nav-wrong"     onclick="UI.go('wrong')"><div class="sb-ic"><i class="ph ph-x-circle"></i></div>Wrong Bank<span class="sb-badge" id="wrc">0</span></div>
       </div>
       <div class="sb-div"></div>
       <div class="sb-sec">
         <div class="sb-lbl">Tools</div>
-        <div class="sb-item" id="nav-timetable" onclick="UI.go('timetable')"><div class="sb-ic">📅</div>Timetable</div>
-        <div class="sb-item" id="nav-progress"  onclick="UI.go('progress')"><div class="sb-ic">📊</div>Progress</div>
-        <div class="sb-item" id="nav-offline"   onclick="UI.go('offline')"><div class="sb-ic">📦</div>Offline Cache</div>
-        <div class="sb-item" id="nav-tutorial"  onclick="TUTORIAL.open()"><div class="sb-ic">❓</div>Tutorial</div>
+        <div class="sb-item" id="nav-timetable" onclick="UI.go('timetable')"><div class="sb-ic"><i class="ph ph-calendar-blank"></i></div>Timetable</div>
+        <div class="sb-item" id="nav-progress"  onclick="UI.go('progress')"><div class="sb-ic"><i class="ph ph-chart-bar"></i></div>Progress</div>
+        <div class="sb-item" id="nav-offline"   onclick="UI.go('offline')"><div class="sb-ic"><i class="ph ph-package"></i></div>Offline Cache</div>
+        <div class="sb-item" id="nav-tutorial"  onclick="TUTORIAL.open()"><div class="sb-ic"><i class="ph ph-question"></i></div>Tutorial</div>
       </div>
       <div style="text-align:center;font-size:.62rem;color:var(--t3);opacity:.6;padding:.6rem 0 .2rem" id="sb-version"><!-- set from app.js --></div>
     </div>
@@ -525,15 +525,15 @@ input[type=file]:hover{border-color:var(--amb)}
           <div class="hero-icon" id="greeting-icon">🌅</div>
         </div>
         <div class="daily-card">
-          <div class="daily-top"><h3>🌟 Daily Challenge</h3><div class="stk-tag" id="stk-tag">🔥 0 day streak</div></div>
+          <div class="daily-top"><h3><i class="ph ph-star"></i> Daily Challenge</h3><div class="stk-tag" id="stk-tag">🔥 0 day streak</div></div>
           <div class="sk-bar" id="sk-bar"></div>
           <p class="daily-desc">30 mixed questions every day — keep the streak alive!</p>
-          <button class="daily-btn" onclick="QUIZ.daily()">🚀 Start Today's Challenge</button>
+          <button class="daily-btn" onclick="QUIZ.daily()"><i class="ph ph-rocket-launch"></i> Start Today's Challenge</button>
         </div>
         <div class="card" style="margin-bottom:1rem">
-          <div class="card-hd"><h3>🎯 Adaptive Practice</h3><span class="ctag ta">Weak-topic focused</span></div>
+          <div class="card-hd"><h3><i class="ph ph-target"></i> Adaptive Practice</h3><span class="ctag ta">Weak-topic focused</span></div>
           <p style="font-size:.78rem;color:var(--t3);margin:.2rem 0 .7rem">Pulls questions you're actually struggling with first — due Wrong Bank items and anything you've tagged Confusing — then fills the rest with fresh content.</p>
-          <button class="btn btn-a btn-lg" style="width:100%" onclick="QUIZ.adaptive()">⚡ Start Adaptive Session</button>
+          <button class="btn btn-a btn-lg" style="width:100%" onclick="QUIZ.adaptive()"><i class="ph ph-lightning"></i> Start Adaptive Session</button>
         </div>
         <div class="sb-lbl" style="margin-bottom:.4rem">Today's Overview</div>
         <div class="stats-row">
@@ -544,13 +544,13 @@ input[type=file]:hover{border-color:var(--amb)}
         </div>
         <div class="sb-lbl" style="margin:.7rem 0 .4rem">Quick Actions</div>
         <div class="qa-row">
-          <button class="qa-tile qt-sky" onclick="UI.go('online')"><span class="qa-ic">☁️</span>Online Study</button>
-          <button class="qa-tile qt-vio" onclick="UI.go('psycho')"><span class="qa-ic">⚡</span>Psycho Mode</button>
-          <button class="qa-tile qt-ros" onclick="UI.go('wrong')"><span class="qa-ic">❌</span>Wrong Bank</button>
-          <button class="qa-tile qt-grn" onclick="UI.go('bookmarks')"><span class="qa-ic">⭐</span>Bookmarks</button>
-          <button class="qa-tile qt-amb" onclick="UI.go('timetable')"><span class="qa-ic">📅</span>Timetable</button>
-          <button class="qa-tile qt-sky" onclick="UI.go('progress')"><span class="qa-ic">📊</span>Progress</button>
-          <button class="qa-tile qt-vio" onclick="TUTORIAL.open()"><span class="qa-ic">❓</span>Tutorial</button>
+          <button class="qa-tile qt-sky" onclick="UI.go('online')"><span class="qa-ic"><i class="ph ph-cloud"></i></span>Online Study</button>
+          <button class="qa-tile qt-vio" onclick="UI.go('psycho')"><span class="qa-ic"><i class="ph ph-lightning"></i></span>Psycho Mode</button>
+          <button class="qa-tile qt-ros" onclick="UI.go('wrong')"><span class="qa-ic"><i class="ph ph-x-circle"></i></span>Wrong Bank</button>
+          <button class="qa-tile qt-grn" onclick="UI.go('bookmarks')"><span class="qa-ic"><i class="ph ph-star"></i></span>Bookmarks</button>
+          <button class="qa-tile qt-amb" onclick="UI.go('timetable')"><span class="qa-ic"><i class="ph ph-calendar-blank"></i></span>Timetable</button>
+          <button class="qa-tile qt-sky" onclick="UI.go('progress')"><span class="qa-ic"><i class="ph ph-chart-bar"></i></span>Progress</button>
+          <button class="qa-tile qt-vio" onclick="TUTORIAL.open()"><span class="qa-ic"><i class="ph ph-question"></i></span>Tutorial</button>
         </div>
         <div class="dash-lower">
           <div class="card"><div class="card-hd"><h3>📈 Recent Sessions</h3></div><div id="recent-sessions"></div></div>
