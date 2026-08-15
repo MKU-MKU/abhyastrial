@@ -565,10 +565,10 @@ input[type=file]:hover{border-color:var(--amb)}
 
       <!-- ONLINE STUDY -->
       <div class="view" id="view-online">
-        <div class="ph"><h2>☁️ Online Study</h2><p>Level → Chapter → Book → Subtopic → Mode</p></div>
-        <div class="on-card-banner"><span>📡</span> Questions stream from Google Drive and cache automatically for offline use.</div>
+        <div class="ph"><h2><i class="ph ph-cloud"></i> Online Study</h2><p>Level → Chapter → Book → Subtopic → Mode</p></div>
+        <div class="on-card-banner"><span><i class="ph ph-broadcast"></i></span> Questions stream from Google Drive and cache automatically for offline use.</div>
         <div id="on-offline-warn" style="display:none;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:var(--r2);padding:.65rem .9rem;margin-bottom:.75rem;font-size:.74rem;color:var(--ros)">
-          📡 <strong>You're offline.</strong> Only cached question sets will load. <a onclick="UI.go('offline')" style="color:var(--amb);cursor:pointer;text-decoration:underline">Go to Offline Cache →</a>
+          <i class="ph ph-broadcast"></i> <strong>You're offline.</strong> Only cached question sets will load. <a onclick="UI.go('offline')" style="color:var(--amb);cursor:pointer;text-decoration:underline">Go to Offline Cache →</a>
         </div>
         <div class="card">
           <div class="card-hd"><h3>Content Selector</h3><span class="ctag tc">Google Drive</span></div>
@@ -578,8 +578,8 @@ input[type=file]:hover{border-color:var(--amb)}
           <select class="sel-c" id="on-to" disabled onchange="ONPROG.render()" aria-label="Select subtopic"><option value="">📑 Select Subtopic…</option></select>
           <hr>
           <div class="bg">
-            <button class="btn btn-g btn-lg" style="flex:1" onclick="ON.start('flashcard')">🏋 Practice / Flashcard</button>
-            <button class="btn btn-a btn-lg" style="flex:1" onclick="ON.start('exam')">📝 Exam Mode</button>
+            <button class="btn btn-g btn-lg" style="flex:1" onclick="ON.start('flashcard')"><i class="ph ph-barbell"></i> Practice / Flashcard</button>
+            <button class="btn btn-a btn-lg" style="flex:1" onclick="ON.start('exam')"><i class="ph ph-note-pencil"></i> Exam Mode</button>
           </div>
         </div>
 
@@ -598,7 +598,7 @@ input[type=file]:hover{border-color:var(--amb)}
           <!-- ══════════ NEW: Cloud sync button ══════════ -->
           <div style="margin-top:8px">
             <button class="btn btn-a" onclick="CLOUD.backup()" style="width:100%">
-              ☁️ Sync Progress to Cloud
+              <i class="ph ph-cloud-arrow-up"></i> Sync Progress to Cloud
             </button>
           </div>
         </div>
@@ -606,7 +606,7 @@ input[type=file]:hover{border-color:var(--amb)}
 
       <!-- LOCAL FILE -->
       <div class="view" id="view-local">
-        <div class="ph"><h2>📂 Local File</h2><p>Load a JSON question bank — works fully offline</p></div>
+        <div class="ph"><h2><i class="ph ph-folder-open"></i> Local File</h2><p>Load a JSON question bank — works fully offline</p></div>
         <div class="card">
           <div class="card-hd"><h3>Upload File</h3><span class="ctag tp">JSON</span></div>
           <p style="font-size:.74rem;color:var(--t3);margin-bottom:.6rem">Format: <span class="mono" style="font-size:.69rem">[{"q":"…","options":[],"correct":0,"explanation":"…"}]</span></p>
@@ -614,28 +614,28 @@ input[type=file]:hover{border-color:var(--amb)}
           <div id="loc-info" style="font-size:.72rem;color:var(--grn);margin:.42rem 0;display:none"></div>
           <hr>
           <div class="bg">
-            <button class="btn btn-g btn-lg" id="loc-pr" disabled style="flex:1" onclick="LOC.start('flashcard')">🏋 Practice</button>
-            <button class="btn btn-a btn-lg" id="loc-ex" disabled style="flex:1" onclick="LOC.start('exam')">📝 Exam</button>
+            <button class="btn btn-g btn-lg" id="loc-pr" disabled style="flex:1" onclick="LOC.start('flashcard')"><i class="ph ph-barbell"></i> Practice</button>
+            <button class="btn btn-a btn-lg" id="loc-ex" disabled style="flex:1" onclick="LOC.start('exam')"><i class="ph ph-note-pencil"></i> Exam</button>
           </div>
         </div>
       </div>
 
       <!-- PSYCHO MODE -->
       <div class="view" id="view-psycho">
-        <div class="ph"><h2>⚡ Psycho Mode</h2><p>Mix chapters · randomise · target weak spots</p></div>
-        <div class="psy-hero"><div class="psy-hero-ic">⚡</div><div class="psy-hero-text"><h4>Multi-chapter Gauntlet</h4><p>Crunch-time training — mix levels, exam pressure, weak-area targeting.</p></div></div>
+        <div class="ph"><h2><i class="ph ph-lightning"></i> Psycho Mode</h2><p>Mix chapters · randomise · target weak spots</p></div>
+        <div class="psy-hero"><div class="psy-hero-ic"><i class="ph ph-lightning"></i></div><div class="psy-hero-text"><h4>Multi-chapter Gauntlet</h4><p>Crunch-time training — mix levels, exam pressure, weak-area targeting.</p></div></div>
         <div class="card">
           <div class="card-hd"><h3>Select Chapters</h3>
-            <div class="bg"><button class="btn btn-sm btn-a" onclick="PSY.all()">✅ All</button><button class="btn btn-sm btn-r" onclick="PSY.none()">✕ Clear</button></div>
+            <div class="bg"><button class="btn btn-sm btn-a" onclick="PSY.all()"><i class="ph ph-check"></i> All</button><button class="btn btn-sm btn-r" onclick="PSY.none()"><i class="ph ph-x"></i> Clear</button></div>
           </div>
           <div id="psy-levels"></div>
           <div id="psy-info" style="font-size:.7rem;color:var(--t3);text-align:center;margin:.36rem 0"></div>
           <hr>
           <div class="g2" style="margin-bottom:.42rem">
-            <button class="btn btn-p btn-lg" onclick="PSY.start('flashcard')">⚡ Flashcard Mix</button>
-            <button class="btn btn-a btn-lg" onclick="PSY.start('exam')">🎲 Exam 100 Qs</button>
+            <button class="btn btn-p btn-lg" onclick="PSY.start('flashcard')"><i class="ph ph-lightning"></i> Flashcard Mix</button>
+            <button class="btn btn-a btn-lg" onclick="PSY.start('exam')"><i class="ph ph-dice-five"></i> Exam 100 Qs</button>
           </div>
-          <button class="btn btn-g btn-blk btn-lg" onclick="PSY.start('weak')">🎯 Focus Weak Areas Only</button>
+          <button class="btn btn-g btn-blk btn-lg" onclick="PSY.start('weak')"><i class="ph ph-target"></i> Focus Weak Areas Only</button>
         </div>
       </div>
 
