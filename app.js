@@ -1264,9 +1264,9 @@ const QUIZ = {
 
       const isStarred = REV.has('bk', q.uid), isFlagged = REV.has('fl', q.uid);
       document.getElementById('fc-acts').innerHTML = `
-        <button class="ib ${isStarred?'bk-on':''}" onclick="QUIZ._star()" title="Bookmark">⭐</button>
-        <button class="ib ${isFlagged?'fl-on':''}" onclick="QUIZ._flag()" title="Flag">🚩</button>
-        <button class="ib" onclick="SRCH.toggle()" title="Search (Ctrl+F)">🔍</button>
+        <button class="ib ${isStarred?'bk-on':''}" onclick="QUIZ._star()" title="Bookmark"><i class="ph ph-star"></i></button>
+        <button class="ib ${isFlagged?'fl-on':''}" onclick="QUIZ._flag()" title="Flag"><i class="ph ph-flag"></i></button>
+        <button class="ib" onclick="SRCH.toggle()" title="Search (Ctrl+F)"><i class="ph ph-magnifying-glass"></i></button>
         <select class="sel-c" style="font-size:.68rem;padding:.2rem .35rem;width:auto" onchange="QUIZ._tagCurrent(this.value)">
           <option value="">🏷 Tag…</option>
           ${BK_TAGS.map(t=>`<option value="${t}" ${REV.getTag(q.uid)===t?'selected':''}>${t}</option>`).join('')}
@@ -1824,8 +1824,8 @@ const ONPROG = {
       const metricLabel = {practised:'Practised',attempted:'Attempted',correct:'Correct',wrong:'Wrong'}[ONPROG.metric];
       const barColor = ONPROG.metric==='wrong' ? 'var(--ros)' : ONPROG.metric==='correct' ? 'var(--grn)' : 'var(--amb)';
       const pct = total ? Math.min(100, Math.round((metricVal/total)*100)) : 0;
-      const unknownNote = info.unknown ? `<div style="font-size:.66rem;color:var(--t3);margin-top:.45rem">⚠️ ${info.unknown} of ${info.files} file${info.files>1?'s':''} not counted yet (offline, or not cached)</div>` : '';
-      const confirmBtn = info.needsConfirm ? `<button class="btn btn-sm btn-a" style="margin-top:.5rem" onclick="ONPROG.render(true)">🔢 Count questions (${info.files} files)</button>` : '';
+      const unknownNote = info.unknown ? `<div style="font-size:.66rem;color:var(--t3);margin-top:.45rem"><i class="ph ph-warning"></i> ${info.unknown} of ${info.files} file${info.files>1?'s':''} not counted yet (offline, or not cached)</div>` : '';
+      const confirmBtn = info.needsConfirm ? `<button class="btn btn-sm btn-a" style="margin-top:.5rem" onclick="ONPROG.render(true)"><i class="ph ph-list-numbers"></i> Count questions (${info.files} files)</button>` : '';
 
       // ── Filewise breakdown — one row per subtopic/file in the current
       // scope, shown alongside the compiled (aggregate) numbers above.
@@ -1846,7 +1846,7 @@ const ONPROG = {
             <div class="pb-l">
               <span>${esc(rowLabel)}</span>
               <span class="fw-row-right">${fVal} / ${fTotal!=null?fTotal:'?'}${fTotal!=null?` (${fPct}%)`:''}
-                <button class="fw-reset" title="Reset progress for this file" onclick="event.stopPropagation();ONPROG.resetFile('${ref.fid}')">🗑</button>
+                <button class="fw-reset" title="Reset progress for this file" onclick="event.stopPropagation();ONPROG.resetFile('${ref.fid}')"><i class="ph ph-trash"></i></button>
               </span>
             </div>
             <div class="pb"><div class="pb-f" style="width:${fTotal!=null?fPct:0}%;background:${barColor}"></div></div>
@@ -1854,7 +1854,7 @@ const ONPROG = {
         }).join('');
         filewiseHtml = `
           <div class="fw-toggle" onclick="ONPROG.toggleFilewise()">
-            <span>${ONPROG.filewiseOpen?'▾':'▸'}</span> 📁 Filewise breakdown (${leaves.length} files)
+            <span>${ONPROG.filewiseOpen?'▾':'▸'}</span> <i class="ph ph-folder"></i> Filewise breakdown (${leaves.length} files)
           </div>
           <div id="on-fw-list" style="display:${ONPROG.filewiseOpen?'block':'none'}">${rows}</div>`;
       }
@@ -1870,7 +1870,7 @@ const ONPROG = {
           <div class="pb-w" style="margin-top:.65rem">
             <div class="pb-l">
               <span>${metricLabel} coverage (compiled)</span>
-              <span>${metricVal} / ${total||'?'} (${pct}%)${fid ? ` <button class="fw-reset" title="Reset progress for this file" onclick="ONPROG.resetFile('${fid}')">🗑</button>` : ''}</span>
+              <span>${metricVal} / ${total||'?'} (${pct}%)${fid ? ` <button class="fw-reset" title="Reset progress for this file" onclick="ONPROG.resetFile('${fid}')"><i class="ph ph-trash"></i></button>` : ''}</span>
             </div>
             <div class="pb"><div class="pb-f" style="width:${pct}%;background:${barColor}"></div></div>
           </div>`}
