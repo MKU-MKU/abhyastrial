@@ -766,7 +766,7 @@ input[type=file]:hover{border-color:var(--amb)}
             <div id="fc-opts"></div>
             <div class="expl" id="fc-expl"></div>
             <div class="srch-panel" id="fc-srch">
-              <div class="srch-row"><input class="srch-inp" id="fc-srch-q" type="text" placeholder="Question + options pre-filled — edit or search…" onkeydown="if(event.key==='Enter')SRCH.go()"><button class="srch-go" onclick="SRCH.go()">🔍</button></div>
+              <div class="srch-row"><input class="srch-inp" id="fc-srch-q" type="text" placeholder="Question + options pre-filled — edit or search…" onkeydown="if(event.key==='Enter')SRCH.go()"><button class="srch-go" onclick="SRCH.go()"><i class="ph ph-magnifying-glass"></i></button></div>
               <div class="srch-links" id="fc-srch-links"></div>
             </div>
           </div>
@@ -790,7 +790,7 @@ input[type=file]:hover{border-color:var(--amb)}
           </div>
           <div id="ex-qs"></div>
           <div style="text-align:center;margin:1rem 0 2rem">
-            <button class="btn btn-solid btn-lg" onclick="QUIZ.submitExam()">📝 Submit All Answers</button>
+            <button class="btn btn-solid btn-lg" onclick="QUIZ.submitExam()"><i class="ph ph-note-pencil"></i> Submit All Answers</button>
           </div>
         </div>
 
@@ -816,11 +816,11 @@ input[type=file]:hover{border-color:var(--amb)}
 
   <!-- MOBILE BOTTOM NAV -->
   <nav id="bnav">
-    <button class="bn-item active" id="bn-home"     onclick="UI.go('home');_bnav('home')"><div class="bn-ic">🏠</div>Home</button>
-    <button class="bn-item"        id="bn-online"   onclick="UI.go('online');_bnav('online')"><div class="bn-ic">☁️</div>Study</button>
-    <button class="bn-item"        id="bn-psycho"   onclick="UI.go('psycho');_bnav('psycho')"><div class="bn-ic">⚡</div>Psycho</button>
-    <button class="bn-item"        id="bn-progress" onclick="UI.go('progress');_bnav('progress')"><div class="bn-ic">📊</div>Progress</button>
-    <button class="bn-item bn-more" onclick="_bnavMore()" aria-label="More options"><div class="bn-ic">☰</div>More<div class="bn-badge" id="bn-badge" style="display:none"></div></button>
+    <button class="bn-item active" id="bn-home"     onclick="UI.go('home');_bnav('home')"><div class="bn-ic"><i class="ph ph-house"></i></div>Home</button>
+    <button class="bn-item"        id="bn-online"   onclick="UI.go('online');_bnav('online')"><div class="bn-ic"><i class="ph ph-cloud"></i></div>Study</button>
+    <button class="bn-item"        id="bn-psycho"   onclick="UI.go('psycho');_bnav('psycho')"><div class="bn-ic"><i class="ph ph-lightning"></i></div>Psycho</button>
+    <button class="bn-item"        id="bn-progress" onclick="UI.go('progress');_bnav('progress')"><div class="bn-ic"><i class="ph ph-chart-bar"></i></div>Progress</button>
+    <button class="bn-item bn-more" onclick="_bnavMore()" aria-label="More options"><div class="bn-ic"><i class="ph ph-list"></i></div>More<div class="bn-badge" id="bn-badge" style="display:none"></div></button>
   </nav>
 
 </div><!-- /app -->
@@ -829,7 +829,7 @@ input[type=file]:hover{border-color:var(--amb)}
 
 <div class="mbg" id="mbg" onclick="closeMod()">
   <div class="mbox" onclick="event.stopPropagation()">
-    <div class="mhd"><h3 id="mtitle">—</h3><button class="mcl" onclick="closeMod()" aria-label="Close dialog">✕</button></div>
+    <div class="mhd"><h3 id="mtitle">—</h3><button class="mcl" onclick="closeMod()" aria-label="Close dialog"><i class="ph ph-x"></i></button></div>
     <div class="mbody" id="mbody"></div>
   </div>
 </div>
