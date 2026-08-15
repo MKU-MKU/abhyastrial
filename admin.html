@@ -6,18 +6,10 @@
 <meta name="theme-color" content="#F2F4F3">
 <title>Abhyas — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+<link rel="stylesheet" href="vendor/phosphor/phosphor-regular.css">
 <link rel="stylesheet" href="design-system.css">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-/* Phosphor renders as an icon font: size follows font-size, color follows
-   `color`, so it drops into existing button/nav/badge styles without any
-   extra markup. This just fixes the icon's own vertical alignment — icon
-   fonts sit slightly high relative to a text baseline by default.
-   Scoped to i.ph specifically — this codebase already uses a bare .ph
-   class for unrelated "page header" wrapper divs, so an unscoped .ph{}
-   rule here would've collided with those. */
-i.ph{vertical-align:-0.125em;line-height:1}
 :root{
   --c0:#F2F4F3;--c1:#EBEEEC;--c2:#FFFFFF;--c3:#FFFFFF;--c4:#E4EFE8;--c5:#E7EAE8;
   --b0:rgba(26,26,26,.035);--b1:#E7EAE8;--b2:rgba(26,26,26,.11);

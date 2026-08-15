@@ -113,6 +113,15 @@ body, #app { min-height: 100dvh; }
    to double-tap-to-zoom detection on interactive elements. */
 button, .btn, a[onclick], [role="button"] { touch-action: manipulation; }
 
+/* Phosphor renders as an icon font: size follows font-size, color follows
+   `color`, so it drops into existing button/nav/badge styles without any
+   extra markup. This just fixes the icon's own vertical alignment — icon
+   fonts sit slightly high relative to a text baseline by default.
+   Scoped to i.ph specifically — admin.html and user.html both already
+   use a bare .ph class for unrelated "page header" wrapper divs, so an
+   unscoped .ph{} rule here would collide with those. */
+i.ph{vertical-align:-0.125em;line-height:1}
+
 /* ── Cross-page resets ── */
 *,*::before,*::after{box-sizing:border-box}
 body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
